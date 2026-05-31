@@ -15,6 +15,7 @@ struct MenuBarView: View {
         Button("Capture All Displays") {
             Task { await appModel.captureAllDisplays() }
         }
+        .keyboardShortcut("5", modifiers: [.command, .shift])
 
         Button("Capture Window") {
             appModel.beginWindowCapture()

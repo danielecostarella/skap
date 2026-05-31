@@ -8,12 +8,14 @@ final class GlobalShortcutController {
     var onCaptureAreaRequested: (() -> Void)?
     var onCaptureSameAreaRequested: (() -> Void)?
     var onCaptureWindowRequested: (() -> Void)?
+    var onCaptureAllDisplaysRequested: (() -> Void)?
 
     private enum ShortcutID: UInt32 {
         case captureScreen = 1
         case captureArea = 2
         case captureSameArea = 3
         case captureWindow = 4
+        case captureAllDisplays = 5
     }
 
     private var eventHandler: EventHandlerRef?
@@ -70,9 +72,7 @@ final class GlobalShortcutController {
         InstallEventHandler(
             GetApplicationEventTarget(),
             { _, event, userData in
-                guard let event, let userData else {
-                    return noErr
-                }
+                guard let event, let userData else { return noErr }
 
                 var hotKeyID = EventHotKeyID()
                 let status = GetEventParameter(
@@ -85,9 +85,7 @@ final class GlobalShortcutController {
                     &hotKeyID
                 )
 
-                guard status == noErr else {
-                    return status
-                }
+                guard status == noErr else { return status }
 
                 let controller = Unmanaged<GlobalShortcutController>
                     .fromOpaque(userData)
@@ -108,31 +106,26 @@ final class GlobalShortcutController {
 
     private func handleShortcut(id: UInt32) {
         switch ShortcutID(rawValue: id) {
-        case .captureScreen:
-            onCaptureScreenRequested?()
-        case .captureArea:
-            onCaptureAreaRequested?()
-        case .captureSameArea:
-            onCaptureSameAreaRequested?()
-        case .captureWindow:
-            onCaptureWindowRequested?()
-        case nil:
-            break
+        case .captureScreen:      onCaptureScreenRequested?()
+        case .captureArea:        onCaptureAreaRequested?()
+        case .captureSameArea:    onCaptureSameAreaRequested?()
+        case .captureWindow:      onCaptureWindowRequested?()
+        case .captureAllDisplays: onCaptureAllDisplaysRequested?()
+        case nil: break
         }
     }
 
     private func shortcutID(for action: ShortcutAction) -> ShortcutID {
         switch action {
-        case .captureScreen:   .captureScreen
-        case .captureArea:     .captureArea
-        case .captureSameArea: .captureSameArea
-        case .captureWindow:   .captureWindow
+        case .captureScreen:      .captureScreen
+        case .captureArea:        .captureArea
+        case .captureSameArea:    .captureSameArea
+        case .captureWindow:      .captureWindow
+        case .captureAllDisplays: .captureAllDisplays
         }
     }
 
     private func fourCharacterCode(_ string: String) -> OSType {
-        string.utf8.reduce(0) { partialResult, character in
-            (partialResult << 8) + OSType(character)
-        }
+        string.utf8.reduce(0) { ($0 << 8) + OSType($1) }
     }
 }

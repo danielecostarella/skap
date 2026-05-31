@@ -1,4 +1,5 @@
 import AppKit
+import AudioToolbox
 import CoreGraphics
 import Foundation
 import SkapCore
@@ -56,6 +57,9 @@ final class SkapAppModel: ObservableObject {
         }
         shortcutController.onCaptureWindowRequested = { [weak self] in
             self?.beginWindowCapture()
+        }
+        shortcutController.onCaptureAllDisplaysRequested = { [weak self] in
+            Task { await self?.captureAllDisplays() }
         }
     }
 
@@ -199,7 +203,7 @@ final class SkapAppModel: ObservableObject {
 
     private func playCaptureSoundIfEnabled() {
         guard settings.captureSound else { return }
-        (NSSound(named: .init("Tink")) ?? NSSound(named: .init("Pop")))?.play()
+        AudioServicesPlaySystemSound(1108) // macOS screenshot shutter sound
     }
 
     private func screenRecordingPermissionIsGranted() -> Bool {

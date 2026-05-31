@@ -80,6 +80,9 @@ struct SettingsView: View {
             LabeledContent("Capture Window") {
                 shortcutRecorder(for: .captureWindow)
             }
+            LabeledContent("Capture All Displays") {
+                shortcutRecorder(for: .captureAllDisplays)
+            }
         }
     }
 
