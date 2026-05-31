@@ -1,7 +1,7 @@
 import CoreGraphics
 import Darwin
 import Foundation
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
 
 public protocol ScreenCapturing: Sendable {
     func capture(options: CaptureOptions) async throws -> CapturedImage
