@@ -16,6 +16,7 @@ struct SettingsView: View {
             }
 
             Section("Capture") {
+                Toggle("Show capture HUD", isOn: $appModel.showsCaptureHUD)
                 Toggle("Copy screenshots to clipboard immediately", isOn: .constant(true))
                     .disabled(true)
                 LabeledContent("Saved area", value: appModel.savedAreaSummary)

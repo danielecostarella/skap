@@ -9,15 +9,22 @@ final class SkapAppModel: ObservableObject {
     @Published private(set) var hasSavedArea = false
     @Published private(set) var savedAreaSummary = "No saved area"
     @Published private(set) var screenRecordingPermissionSummary = "Unknown"
+    @Published var showsCaptureHUD: Bool {
+        didSet {
+            settingsStore.settings = SkapSettings(showsCaptureHUD: showsCaptureHUD)
+        }
+    }
 
     private let coordinator = SkapCoordinator()
     private let areaSelectionController = AreaSelectionController()
     private let windowSelectionController = WindowSelectionController()
     private let captureFeedbackController = CaptureFeedbackController()
     private let savedAreaStore = SavedCaptureAreaStore()
+    private let settingsStore = SkapSettingsStore()
     private let shortcutController = GlobalShortcutController()
 
     init() {
+        showsCaptureHUD = settingsStore.settings.showsCaptureHUD
         refreshSavedAreaState()
         refreshPermissionState()
 
@@ -46,7 +53,7 @@ final class SkapAppModel: ObservableObject {
             )
             lastCapture = image
             statusMessage = "Captured to clipboard"
-            captureFeedbackController.show(image: image, message: statusMessage)
+            showCaptureFeedback(image: image)
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -105,7 +112,7 @@ final class SkapAppModel: ObservableObject {
             )
             lastCapture = image
             statusMessage = "Captured window to clipboard"
-            captureFeedbackController.show(image: image, message: statusMessage)
+            showCaptureFeedback(image: image)
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -136,7 +143,7 @@ final class SkapAppModel: ObservableObject {
             )
             lastCapture = image
             statusMessage = message
-            captureFeedbackController.show(image: image, message: statusMessage)
+            showCaptureFeedback(image: image)
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -145,6 +152,14 @@ final class SkapAppModel: ObservableObject {
     private func saveArea(_ area: CaptureArea) {
         savedAreaStore.savedArea = area
         refreshSavedAreaState()
+    }
+
+    private func showCaptureFeedback(image: CapturedImage) {
+        guard showsCaptureHUD else {
+            return
+        }
+
+        captureFeedbackController.show(image: image, message: statusMessage)
     }
 
     private func screenRecordingPermissionIsGranted() -> Bool {

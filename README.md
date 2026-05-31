@@ -55,6 +55,7 @@ swift run skap --help
 - Saved areas remember the display they were selected on, which keeps repeat captures predictable on multi-monitor setups.
 - Settings show the saved area coordinates and let you clear the saved area.
 - Settings show whether macOS Screen Recording permission is granted.
+- Settings let you show or hide the capture HUD.
 - `skap same-area`: captures the saved area from scripts or automation.
 
 ## Default Shortcuts
