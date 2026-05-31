@@ -8,6 +8,7 @@ final class SkapAppModel: ObservableObject {
     @Published var statusMessage = "Ready"
     @Published private(set) var hasSavedArea = false
     @Published private(set) var savedAreaSummary = "No saved area"
+    @Published private(set) var screenRecordingPermissionSummary = "Unknown"
 
     private let coordinator = SkapCoordinator()
     private let areaSelectionController = AreaSelectionController()
@@ -18,6 +19,7 @@ final class SkapAppModel: ObservableObject {
 
     init() {
         refreshSavedAreaState()
+        refreshPermissionState()
 
         shortcutController.onCaptureAreaRequested = { [weak self] in
             self?.beginAreaCapture()
@@ -31,6 +33,10 @@ final class SkapAppModel: ObservableObject {
     }
 
     func captureScreen() async {
+        guard screenRecordingPermissionIsGranted() else {
+            return
+        }
+
         do {
             let image = try await coordinator.capture(
                 options: CaptureOptions(mode: .screen)
@@ -44,6 +50,10 @@ final class SkapAppModel: ObservableObject {
     }
 
     func beginAreaCapture() {
+        guard screenRecordingPermissionIsGranted() else {
+            return
+        }
+
         statusMessage = "Select an area"
         areaSelectionController.beginSelection { [weak self] pixelRect in
             self?.saveArea(pixelRect)
@@ -54,6 +64,10 @@ final class SkapAppModel: ObservableObject {
     }
 
     func captureSavedArea() {
+        guard screenRecordingPermissionIsGranted() else {
+            return
+        }
+
         guard let savedArea = savedAreaStore.savedArea else {
             statusMessage = "No saved area yet"
             return
@@ -69,6 +83,10 @@ final class SkapAppModel: ObservableObject {
     }
 
     func beginWindowCapture() {
+        guard screenRecordingPermissionIsGranted() else {
+            return
+        }
+
         statusMessage = "Click a window"
         windowSelectionController.beginSelection { [weak self] windowID in
             Task { await self?.captureWindow(windowID) }
@@ -90,6 +108,19 @@ final class SkapAppModel: ObservableObject {
         }
     }
 
+    func requestScreenRecordingPermission() {
+        if ScreenRecordingPermission.request() {
+            statusMessage = "Screen recording permission granted"
+        } else {
+            statusMessage = "Enable Screen Recording in System Settings"
+        }
+        refreshPermissionState()
+    }
+
+    func refreshPermissionState() {
+        screenRecordingPermissionSummary = ScreenRecordingPermission.isGranted ? "Granted" : "Not granted"
+    }
+
     private func captureArea(_ pixelRect: CGRect, message: String) async {
         do {
             let image = try await coordinator.capture(
@@ -106,6 +137,17 @@ final class SkapAppModel: ObservableObject {
     private func saveArea(_ pixelRect: CGRect) {
         savedAreaStore.savedArea = pixelRect
         refreshSavedAreaState()
+    }
+
+    private func screenRecordingPermissionIsGranted() -> Bool {
+        refreshPermissionState()
+
+        guard ScreenRecordingPermission.isGranted else {
+            statusMessage = "Screen recording permission required"
+            return false
+        }
+
+        return true
     }
 
     private func refreshSavedAreaState() {

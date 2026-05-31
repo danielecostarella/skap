@@ -5,6 +5,13 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section("Permissions") {
+                LabeledContent("Screen Recording", value: appModel.screenRecordingPermissionSummary)
+                Button("Request Screen Recording Permission") {
+                    appModel.requestScreenRecordingPermission()
+                }
+            }
+
             Section("Capture") {
                 Toggle("Copy screenshots to clipboard immediately", isOn: .constant(true))
                     .disabled(true)
@@ -25,7 +32,10 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 300)
+        .frame(width: 500, height: 380)
         .padding()
+        .onAppear {
+            appModel.refreshPermissionState()
+        }
     }
 }

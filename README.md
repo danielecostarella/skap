@@ -30,6 +30,7 @@ swift run skap --help
 - `Capture Area`: drag a rectangle to capture a portion of the screen. The selected area is saved for reuse.
 - `Capture Same Area`: captures the last selected area again without asking you to redraw it.
 - Settings show the saved area coordinates and let you clear the saved area.
+- Settings show whether macOS Screen Recording permission is granted.
 
 ## Default Shortcuts
 
