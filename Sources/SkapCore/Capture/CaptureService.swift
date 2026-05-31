@@ -69,7 +69,14 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
     }
 
     private func captureArea(_ area: CaptureArea) async throws -> CapturedImage {
-        let image = try await captureDisplayImage(displayID: area.displayID)
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        guard let display = content.displays.first(where: { $0.displayID == area.displayID }) else {
+            throw CaptureError.noDisplayAvailable
+        }
+
+        // Capture at physical pixel resolution so pixelRect (scaled by backingScaleFactor) is valid.
+        let image = try await captureDisplayImage(display: display, scale: area.scale)
+
         let boundedRect = area.pixelRect.integral.intersection(
             CGRect(x: 0, y: 0, width: image.width, height: image.height)
         )
@@ -190,11 +197,11 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
         return try await captureDisplayImage(display: display)
     }
 
-    private func captureDisplayImage(display: SCDisplay) async throws -> CGImage {
+    private func captureDisplayImage(display: SCDisplay, scale: CGFloat = 1) async throws -> CGImage {
         let filter = SCContentFilter(display: display, excludingWindows: [])
         let configuration = SCStreamConfiguration()
-        configuration.width = display.width
-        configuration.height = display.height
+        configuration.width = Int((CGFloat(display.width) * scale).rounded())
+        configuration.height = Int((CGFloat(display.height) * scale).rounded())
         configuration.showsCursor = true
 
         return try await SCScreenshotManager.captureImage(

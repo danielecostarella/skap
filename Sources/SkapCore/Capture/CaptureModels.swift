@@ -16,10 +16,12 @@ public enum ScreenSelection: Sendable, Equatable {
 public struct CaptureArea: Codable, Sendable, Equatable {
     public var displayID: CGDirectDisplayID
     public var pixelRect: CGRect
+    public var scale: CGFloat
 
-    public init(displayID: CGDirectDisplayID, pixelRect: CGRect) {
+    public init(displayID: CGDirectDisplayID, pixelRect: CGRect, scale: CGFloat = 1) {
         self.displayID = displayID
         self.pixelRect = pixelRect
+        self.scale = scale
     }
 }
 

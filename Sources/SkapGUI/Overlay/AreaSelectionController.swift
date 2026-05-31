@@ -71,7 +71,7 @@ final class AreaSelectionController {
                         width: rect.width * scale,
                         height: rect.height * scale
                     )
-                    onSelected(CaptureArea(displayID: screen.displayID, pixelRect: pixelRect))
+                    onSelected(CaptureArea(displayID: screen.displayID, pixelRect: pixelRect, scale: scale))
                 },
                 onCancel: { [weak self] in
                     self?.dismiss()
