@@ -161,6 +161,14 @@ brew install --cask daniele-costarella/skap/skap
 
 > The tap (`daniele-costarella/homebrew-skap`) is a separate repository created after the first stable release.
 
+## Roadmap
+
+- [ ] **Notarization** — requires Apple Developer account; unlock Gatekeeper-free distribution
+- [ ] **Sparkle auto-update** — in-app update UI with delta downloads (blocked on notarization)
+- [ ] **Homebrew tap** — `brew install --cask daniele-costarella/skap/skap`
+- [ ] **Custom shortcuts UI polish** — keyboard shortcut recorder improvements
+- [ ] **App Store** — long-term, pending sandboxing audit
+
 ## Maintainer
 
 Created and maintained by [Daniele Costarella](https://github.com/danielecostarella).

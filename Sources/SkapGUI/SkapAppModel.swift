@@ -27,6 +27,7 @@ final class SkapAppModel: ObservableObject {
     private let savedAreaStore = SavedCaptureAreaStore()
     private let settingsStore: SkapSettingsStore
     private let shortcutController: GlobalShortcutController
+    let updateChecker = UpdateChecker()
 
     init() {
         let store = SkapSettingsStore()
@@ -41,6 +42,8 @@ final class SkapAppModel: ObservableObject {
         Task { [weak self] in
             self?.onboardingController.showIfNeeded()
         }
+
+        updateChecker.checkInBackground()
 
         shortcutController.onCaptureScreenRequested = { [weak self] in
             Task { await self?.captureScreen() }

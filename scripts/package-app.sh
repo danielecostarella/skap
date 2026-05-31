@@ -20,6 +20,10 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp "$BUILD_DIR/$APP_NAME" "$MACOS_DIR/$APP_NAME"
 cp "$ROOT_DIR/Packaging/Skap.app/Contents/Info.plist" "$CONTENTS_DIR/Info.plist"
+
+VERSION="$(git -C "$ROOT_DIR" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0")"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$CONTENTS_DIR/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$CONTENTS_DIR/Info.plist"
 cp "$ROOT_DIR/Packaging/Skap.app/Contents/PkgInfo" "$CONTENTS_DIR/PkgInfo"
 
 if [[ -f "$ROOT_DIR/Packaging/Skap.app/Contents/Resources/AppIcon.icns" ]]; then

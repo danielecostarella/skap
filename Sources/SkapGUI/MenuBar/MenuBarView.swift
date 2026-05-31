@@ -4,6 +4,8 @@ struct MenuBarView: View {
     @ObservedObject var appModel: SkapAppModel
     @Environment(\.openSettings) private var openSettings
 
+    private var updateChecker: UpdateChecker { appModel.updateChecker }
+
     var body: some View {
         Button("Capture Full Screen") {
             Task { await appModel.captureScreen() }
@@ -46,6 +48,13 @@ struct MenuBarView: View {
 
         Text(appModel.statusMessage)
             .foregroundStyle(.secondary)
+
+        if let version = updateChecker.availableVersion {
+            Divider()
+            Button("Update available: v\(version)") {
+                NSWorkspace.shared.open(URL(string: "https://github.com/danielecostarella/skap/releases/latest")!)
+            }
+        }
 
         Divider()
 
