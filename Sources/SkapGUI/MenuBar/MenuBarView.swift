@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MenuBarView: View {
     @ObservedObject var appModel: SkapAppModel
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         Button("Capture Full Screen") {
@@ -36,8 +37,9 @@ struct MenuBarView: View {
 
         Divider()
 
-        SettingsLink {
-            Text("Settings…")
+        Button("Settings…") {
+            NSApplication.shared.activate(ignoringOtherApps: true)
+            openSettings()
         }
 
         Divider()
