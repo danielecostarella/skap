@@ -10,6 +10,7 @@ struct SkapCommand: AsyncParsableCommand {
         subcommands: [
             Window.self,
             Area.self,
+            SameArea.self,
             Screen.self,
             Last.self
         ]
@@ -44,6 +45,34 @@ struct Area: AsyncParsableCommand {
 
     func run() async throws {
         throw ValidationError("Interactive area selection is implemented in the GUI target next.")
+    }
+}
+
+struct SameArea: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "same-area",
+        abstract: "Capture the last area selected in the GUI."
+    )
+
+    @Option(name: .long, help: "Write the screenshot to this path.")
+    var output: String?
+
+    func run() async throws {
+        let store = SavedCaptureAreaStore()
+
+        guard let savedArea = store.savedArea else {
+            throw ValidationError("No saved area found. Use Capture Area in the GUI first.")
+        }
+
+        let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
+        let coordinator = SkapCoordinator()
+        _ = try await coordinator.capture(
+            options: CaptureOptions(
+                mode: .area(savedArea),
+                copyToClipboard: outputURL == nil,
+                outputURL: outputURL
+            )
+        )
     }
 }
 

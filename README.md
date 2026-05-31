@@ -31,6 +31,7 @@ swift run skap --help
 - `Capture Same Area`: captures the last selected area again without asking you to redraw it.
 - Settings show the saved area coordinates and let you clear the saved area.
 - Settings show whether macOS Screen Recording permission is granted.
+- `skap same-area`: captures the saved area from scripts or automation.
 
 ## Default Shortcuts
 
