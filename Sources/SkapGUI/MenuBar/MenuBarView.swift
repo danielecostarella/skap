@@ -16,11 +16,11 @@ struct MenuBarView: View {
             appModel.beginAreaCapture()
         }
 
-        Button("Capture Window and Pin") {
+        Button("Pin Window on Screen") {
             appModel.beginWindowCapture(pin: true)
         }
 
-        Button("Capture Area and Pin") {
+        Button("Pin Area on Screen") {
             appModel.beginAreaCapture(pin: true)
         }
 
