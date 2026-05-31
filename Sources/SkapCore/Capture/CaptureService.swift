@@ -1,4 +1,5 @@
 import CoreGraphics
+import Darwin
 import Foundation
 import ScreenCaptureKit
 
@@ -37,7 +38,7 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
         case .screen:
             return try await captureMainDisplay()
         case .window(.current):
-            throw CaptureError.unsupportedMode("current window")
+            return try await captureWindow(try currentWindowID())
         case .window(.id(let windowID)):
             return try await captureWindow(windowID)
         case .area(let area):
@@ -100,6 +101,33 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
             cgImage: image,
             metadata: CaptureMetadata(modeDescription: "window")
         )
+    }
+
+    private nonisolated func currentWindowID() throws -> CGWindowID {
+        guard let windowInfo = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements],
+            kCGNullWindowID
+        ) as? [[String: Any]] else {
+            throw CaptureError.noWindowAvailable
+        }
+
+        for info in windowInfo {
+            guard
+                let windowID = info[kCGWindowNumber as String] as? CGWindowID,
+                let layer = info[kCGWindowLayer as String] as? Int,
+                layer == 0,
+                let alpha = info[kCGWindowAlpha as String] as? Double,
+                alpha > 0,
+                let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t,
+                ownerPID != getpid()
+            else {
+                continue
+            }
+
+            return windowID
+        }
+
+        throw CaptureError.noWindowAvailable
     }
 
     private func captureMainDisplayImage() async throws -> CGImage {

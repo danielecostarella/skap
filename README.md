@@ -27,6 +27,7 @@ swift run skap --help
 
 - `Capture Full Screen`: captures the main display and copies it to the clipboard.
 - `Capture Window`: click a window to capture only that window.
+- `skap window --current`: captures the frontmost window from scripts or automation.
 - `Capture Area`: drag a rectangle to capture a portion of the screen. The selected area is saved for reuse.
 - `Capture Same Area`: captures the last selected area again without asking you to redraw it.
 - Saved areas remember the display they were selected on, which keeps repeat captures predictable on multi-monitor setups.
