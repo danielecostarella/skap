@@ -16,6 +16,15 @@ The project is intentionally split into three modules:
 swift build
 ```
 
+## Package the macOS App
+
+```sh
+scripts/package-app.sh
+open dist/Skap.app
+```
+
+The generated app bundle uses `com.danielecostarella.skap` as its bundle identifier and is ad-hoc signed for local development.
+
 ## Run
 
 ```sh
