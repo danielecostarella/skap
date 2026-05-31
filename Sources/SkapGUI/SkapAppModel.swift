@@ -6,86 +6,92 @@ import SkapCore
 final class SkapAppModel: ObservableObject {
     @Published var lastCapture: CapturedImage?
     @Published var statusMessage = "Ready"
+    @Published private(set) var hasSavedArea = false
 
     private let coordinator = SkapCoordinator()
-    private let pinController = PinWindowController()
     private let areaSelectionController = AreaSelectionController()
     private let windowSelectionController = WindowSelectionController()
     private let captureFeedbackController = CaptureFeedbackController()
+    private let savedAreaStore = SavedCaptureAreaStore()
     private let shortcutController = GlobalShortcutController()
 
     init() {
+        hasSavedArea = savedAreaStore.savedArea != nil
+
         shortcutController.onCaptureRequested = { [weak self] in
             Task { await self?.captureScreen() }
         }
     }
 
-    func captureScreen(pin: Bool = false) async {
+    func captureScreen() async {
         do {
             let image = try await coordinator.capture(
-                options: CaptureOptions(mode: .screen, pinAfterCapture: pin)
+                options: CaptureOptions(mode: .screen)
             )
             lastCapture = image
             statusMessage = "Captured to clipboard"
             captureFeedbackController.show(image: image, message: statusMessage)
-
-            if pin {
-                pinController.pin(image: image)
-            }
         } catch {
             statusMessage = error.localizedDescription
         }
     }
 
-    func beginAreaCapture(pin: Bool = false) {
+    func beginAreaCapture() {
         statusMessage = "Select an area"
         areaSelectionController.beginSelection { [weak self] pixelRect in
-            Task { await self?.captureArea(pixelRect, pin: pin) }
+            self?.saveArea(pixelRect)
+            Task { await self?.captureArea(pixelRect, message: "Captured area to clipboard") }
         } onCancel: { [weak self] in
             self?.statusMessage = "Ready"
         }
     }
 
-    func beginWindowCapture(pin: Bool = false) {
+    func captureSavedArea() {
+        guard let savedArea = savedAreaStore.savedArea else {
+            statusMessage = "No saved area yet"
+            return
+        }
+
+        Task { await captureArea(savedArea, message: "Captured same area to clipboard") }
+    }
+
+    func beginWindowCapture() {
         statusMessage = "Click a window"
         windowSelectionController.beginSelection { [weak self] windowID in
-            Task { await self?.captureWindow(windowID, pin: pin) }
+            Task { await self?.captureWindow(windowID) }
         } onCancel: { [weak self] in
             self?.statusMessage = "Ready"
         }
     }
 
-    private func captureWindow(_ windowID: CGWindowID, pin: Bool) async {
+    private func captureWindow(_ windowID: CGWindowID) async {
         do {
             let image = try await coordinator.capture(
-                options: CaptureOptions(mode: .window(.id(windowID)), pinAfterCapture: pin)
+                options: CaptureOptions(mode: .window(.id(windowID)))
             )
             lastCapture = image
-            statusMessage = pin ? "Captured window, copied, and pinned" : "Captured window to clipboard"
+            statusMessage = "Captured window to clipboard"
             captureFeedbackController.show(image: image, message: statusMessage)
-
-            if pin {
-                pinController.pin(image: image)
-            }
         } catch {
             statusMessage = error.localizedDescription
         }
     }
 
-    private func captureArea(_ pixelRect: CGRect, pin: Bool) async {
+    private func captureArea(_ pixelRect: CGRect, message: String) async {
         do {
             let image = try await coordinator.capture(
-                options: CaptureOptions(mode: .area(pixelRect), pinAfterCapture: pin)
+                options: CaptureOptions(mode: .area(pixelRect))
             )
             lastCapture = image
-            statusMessage = pin ? "Captured, copied, and pinned" : "Captured area to clipboard"
+            statusMessage = message
             captureFeedbackController.show(image: image, message: statusMessage)
-
-            if pin {
-                pinController.pin(image: image)
-            }
         } catch {
             statusMessage = error.localizedDescription
         }
+    }
+
+    private func saveArea(_ pixelRect: CGRect) {
+        savedAreaStore.savedArea = pixelRect
+        hasSavedArea = true
     }
 }

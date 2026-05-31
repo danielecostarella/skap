@@ -1,13 +1,13 @@
 # skap
 
-`skap` is a native, privacy-first macOS screenshot app: fast capture, instant clipboard, lightweight annotation, pin-to-screen, and a scriptable CLI.
+`skap` is a native, privacy-first macOS screenshot app: fast capture, instant clipboard, reusable capture areas, lightweight annotation, and a scriptable CLI.
 
 Created and maintained by Daniele Costarella.
 
 The project is intentionally split into three modules:
 
 - `SkapCore`: ScreenCaptureKit capture, clipboard, image processing, annotation models.
-- `SkapGUI`: menu bar app, global shortcut handling, SwiftUI overlay editor, pinned screenshot windows.
+- `SkapGUI`: menu bar app, global shortcut handling, SwiftUI overlay editor, and reusable capture areas.
 - `skap-cli`: terminal interface powered by Swift Argument Parser.
 
 ## Build
@@ -27,8 +27,8 @@ swift run skap --help
 
 - `Capture Full Screen`: captures the main display and copies it to the clipboard.
 - `Capture Window`: click a window to capture only that window.
-- `Capture Area`: drag a rectangle to capture a portion of the screen.
-- `Pin Window on Screen` / `Pin Area on Screen`: captures the target, copies it to the clipboard, and opens it as a floating reference window that stays above normal windows.
+- `Capture Area`: drag a rectangle to capture a portion of the screen. The selected area is saved for reuse.
+- `Capture Same Area`: captures the last selected area again without asking you to redraw it.
 
 ## Xcode
 

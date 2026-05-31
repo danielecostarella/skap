@@ -16,13 +16,10 @@ struct MenuBarView: View {
             appModel.beginAreaCapture()
         }
 
-        Button("Pin Window on Screen") {
-            appModel.beginWindowCapture(pin: true)
+        Button("Capture Same Area") {
+            appModel.captureSavedArea()
         }
-
-        Button("Pin Area on Screen") {
-            appModel.beginAreaCapture(pin: true)
-        }
+        .disabled(!appModel.hasSavedArea)
 
         Button("Edit Last Capture (coming soon)") {}
             .disabled(true)
