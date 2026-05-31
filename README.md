@@ -35,6 +35,7 @@ swift run skap --help
 
 ## Default Shortcuts
 
+- `Cmd+Shift+1`: Capture Full Screen.
 - `Cmd+Shift+2`: Capture Area.
 - `Cmd+Shift+3`: Capture Same Area.
 - `Cmd+Shift+4`: Capture Window.

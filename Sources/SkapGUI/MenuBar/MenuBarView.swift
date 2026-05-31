@@ -7,6 +7,7 @@ struct MenuBarView: View {
         Button("Capture Full Screen") {
             Task { await appModel.captureScreen() }
         }
+        .keyboardShortcut("1", modifiers: [.command, .shift])
 
         Button("Capture Window") {
             appModel.beginWindowCapture()

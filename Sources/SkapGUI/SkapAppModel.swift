@@ -21,6 +21,9 @@ final class SkapAppModel: ObservableObject {
         refreshSavedAreaState()
         refreshPermissionState()
 
+        shortcutController.onCaptureScreenRequested = { [weak self] in
+            Task { await self?.captureScreen() }
+        }
         shortcutController.onCaptureAreaRequested = { [weak self] in
             self?.beginAreaCapture()
         }

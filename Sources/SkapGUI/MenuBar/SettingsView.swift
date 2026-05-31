@@ -23,6 +23,8 @@ struct SettingsView: View {
             }
 
             Section("Shortcuts") {
+                Text("Capture Full Screen: Cmd+Shift+1")
+                    .foregroundStyle(.secondary)
                 Text("Capture Area: Cmd+Shift+2")
                     .foregroundStyle(.secondary)
                 Text("Capture Same Area: Cmd+Shift+3")
