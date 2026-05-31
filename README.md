@@ -25,6 +25,15 @@ open dist/Skap.app
 
 The generated app bundle uses `com.danielecostarella.skap` as its bundle identifier and is ad-hoc signed for local development.
 
+To install the generated app locally:
+
+```sh
+scripts/install-app.sh
+open ~/Applications/Skap.app
+```
+
+Set `INSTALL_DIR=/Applications` if you want to install into the system Applications folder.
+
 To regenerate the app icon:
 
 ```sh
