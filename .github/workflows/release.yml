@@ -25,6 +25,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
+      - name: Install create-dmg
+        run: brew install create-dmg
+
       - name: Build app bundle
         run: bash scripts/package-app.sh
         env:
@@ -36,12 +39,8 @@ jobs:
 
       - name: Create DMG
         run: |
-          hdiutil create \
-            -volname "Skap ${{ github.ref_name }}" \
-            -srcfolder dist/Skap.app \
-            -ov \
-            -format UDZO \
-            "dist/Skap-${{ github.ref_name }}.dmg"
+          VERSION="${{ github.ref_name }}" bash scripts/make-dmg.sh
+          mv dist/Skap-${{ github.ref_name }}.dmg dist/Skap-${{ github.ref_name }}.dmg || true
 
       - name: Compute checksums
         id: checksums
