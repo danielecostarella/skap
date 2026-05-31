@@ -6,11 +6,6 @@ import Foundation
 public struct AnnotationRenderer: Sendable {
     public init() {}
 
-    /// Renders annotation elements onto a CGImage.
-    /// - Parameters:
-    ///   - elements: Annotations to draw. Frames are in view coordinates.
-    ///   - image: The base image to annotate.
-    ///   - viewSize: The size of the canvas where annotations were drawn.
     public func render(elements: [AnnotationElement], onto image: CGImage, viewSize: CGSize) -> CGImage? {
         let width = image.width
         let height = image.height
@@ -27,11 +22,13 @@ public struct AnnotationRenderer: Sendable {
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
         ) else { return nil }
 
-        // CGContext origin is bottom-left; flip to top-left for consistency with SwiftUI canvas
+        // Draw base image BEFORE flipping — in natural CG coordinates (y=0 at bottom)
+        // context.draw maps image upright in the standard bottom-left system.
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // Flip to top-left origin so annotation frames from SwiftUI canvas map directly.
         context.translateBy(x: 0, y: CGFloat(height))
         context.scaleBy(x: 1, y: -1)
-
-        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
 
         let scaleX = CGFloat(width) / viewSize.width
         let scaleY = CGFloat(height) / viewSize.height
@@ -52,7 +49,14 @@ public struct AnnotationRenderer: Sendable {
             width: f.size.width * scaleX,
             height: f.size.height * scaleY
         )
-        return AnnotationElement(id: element.id, tool: element.tool, frame: scaled, text: element.text, redactionStyle: element.redactionStyle)
+        let scaledPoints = element.points?.map {
+            CGPoint(x: $0.x * scaleX, y: $0.y * scaleY)
+        }
+        return AnnotationElement(
+            id: element.id, tool: element.tool, frame: scaled,
+            text: element.text, redactionStyle: element.redactionStyle,
+            color: element.color, points: scaledPoints
+        )
     }
 
     private func render(element: AnnotationElement, onto baseImage: CGImage, in context: CGContext, imageSize: CGSize) {
@@ -63,27 +67,32 @@ public struct AnnotationRenderer: Sendable {
         case .arrow:
             let start = element.frame.origin
             let end = CGPoint(x: start.x + element.frame.size.width, y: start.y + element.frame.size.height)
-            drawArrow(from: start, to: end, in: context)
+            drawArrow(from: start, to: end, color: element.color, in: context)
 
         case .rectangle:
-            context.setStrokeColor(annotationColor)
+            context.setStrokeColor(element.color.cgColor)
             context.setLineWidth(lineWidth)
             context.setLineCap(.round)
             context.setLineJoin(.round)
             context.stroke(element.frame.standardized)
 
         case .ellipse:
-            context.setStrokeColor(annotationColor)
+            context.setStrokeColor(element.color.cgColor)
             context.setLineWidth(lineWidth)
             context.strokeEllipse(in: element.frame.standardized)
 
         case .highlight:
-            context.setFillColor(highlightColor)
+            context.setFillColor(element.color.highlightCGColor())
             context.fill(element.frame.standardized)
+
+        case .pen:
+            if let pts = element.points, pts.count > 1 {
+                drawPen(pts, color: element.color, in: context)
+            }
 
         case .text:
             if let text = element.text, !text.isEmpty {
-                drawText(text, at: element.frame.origin, in: context)
+                drawText(text, at: element.frame.origin, color: element.color, in: context)
             }
 
         case .redact:
@@ -97,8 +106,8 @@ public struct AnnotationRenderer: Sendable {
         }
     }
 
-    private func drawArrow(from start: CGPoint, to end: CGPoint, in context: CGContext) {
-        context.setStrokeColor(annotationColor)
+    private func drawArrow(from start: CGPoint, to end: CGPoint, color: AnnotationColor, in context: CGContext) {
+        context.setStrokeColor(color.cgColor)
         context.setLineWidth(lineWidth)
         context.setLineCap(.round)
 
@@ -110,47 +119,52 @@ public struct AnnotationRenderer: Sendable {
         let headLength: CGFloat = max(lineWidth * 5, 16)
         let headAngle: CGFloat = .pi / 6
 
-        let p1 = CGPoint(
+        context.move(to: end)
+        context.addLine(to: CGPoint(
             x: end.x - headLength * cos(angle - headAngle),
             y: end.y - headLength * sin(angle - headAngle)
-        )
-        let p2 = CGPoint(
+        ))
+        context.move(to: end)
+        context.addLine(to: CGPoint(
             x: end.x - headLength * cos(angle + headAngle),
             y: end.y - headLength * sin(angle + headAngle)
-        )
-
-        context.move(to: end)
-        context.addLine(to: p1)
-        context.move(to: end)
-        context.addLine(to: p2)
+        ))
         context.strokePath()
     }
 
-    private func drawText(_ text: String, at origin: CGPoint, in context: CGContext) {
+    private func drawPen(_ points: [CGPoint], color: AnnotationColor, in context: CGContext) {
+        context.setStrokeColor(color.highlightCGColor())
+        context.setLineWidth(18)
+        context.setLineCap(.round)
+        context.setLineJoin(.round)
+        context.move(to: points[0])
+        for point in points.dropFirst() {
+            context.addLine(to: point)
+        }
+        context.strokePath()
+    }
+
+    private func drawText(_ text: String, at origin: CGPoint, color: AnnotationColor, in context: CGContext) {
         let font = CTFontCreateWithName("Helvetica-Bold" as CFString, 18, nil)
-        let color = CGColor(red: 1, green: 0.2, blue: 0.2, alpha: 1)
-        let attrs = [kCTFontAttributeName: font, kCTForegroundColorAttributeName: color] as CFDictionary
+        let attrs = [kCTFontAttributeName: font, kCTForegroundColorAttributeName: color.cgColor] as CFDictionary
         let attrString = CFAttributedStringCreate(nil, text as CFString, attrs)!
         let line = CTLineCreateWithAttributedString(attrString)
+        context.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
         context.textPosition = origin
         CTLineDraw(line, context)
     }
 
     private func drawRedaction(in frame: CGRect, style: RedactionStyle, baseImage: CGImage, in context: CGContext, imageSize: CGSize) {
-        // Crop the base image region and apply blur/pixelate
-        // CIImage origin is bottom-left, so flip the y coordinate
         let ciFrame = CGRect(
             x: frame.minX,
             y: imageSize.height - frame.maxY,
             width: frame.width,
             height: frame.height
         )
-
         guard ciFrame.width > 0, ciFrame.height > 0 else { return }
 
         let ciImage = CIImage(cgImage: baseImage).cropped(to: ciFrame)
         let filterName = style == .pixelate ? "CIPixellate" : "CIGaussianBlur"
-
         guard let filter = CIFilter(name: filterName) else { return }
         filter.setValue(ciImage, forKey: kCIInputImageKey)
 
@@ -162,19 +176,9 @@ public struct AnnotationRenderer: Sendable {
         }
 
         guard let output = filter.outputImage else { return }
-
         let ciContext = CIContext()
         guard let blurred = ciContext.createCGImage(output, from: ciFrame) else { return }
-
         context.draw(blurred, in: frame)
-    }
-
-    private var annotationColor: CGColor {
-        CGColor(red: 1, green: 0.2, blue: 0.2, alpha: 1) // red
-    }
-
-    private var highlightColor: CGColor {
-        CGColor(red: 1, green: 0.95, blue: 0, alpha: 0.4) // semi-transparent yellow
     }
 
     private var lineWidth: CGFloat { 3 }

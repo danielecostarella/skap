@@ -57,7 +57,23 @@ final class SkapAppModel: ObservableObject {
     }
 
     func captureScreen() async {
-        await captureScreen(.main)
+        let selection: ScreenSelection
+        if let id = displayIDUnderCursor() {
+            selection = .display(id)
+        } else {
+            selection = .main
+        }
+        await captureScreen(selection)
+    }
+
+    private func displayIDUnderCursor() -> CGDirectDisplayID? {
+        let point = NSEvent.mouseLocation
+        for screen in NSScreen.screens {
+            if screen.frame.contains(point) {
+                return screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+            }
+        }
+        return nil
     }
 
     func captureAllDisplays() async {

@@ -149,7 +149,9 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
             onScreenWindowsOnly: true
         )
 
-        guard let display = content.displays.first else {
+        let mainID = CGMainDisplayID()
+        guard let display = content.displays.first(where: { $0.displayID == mainID })
+                             ?? content.displays.first else {
             throw CaptureError.noDisplayAvailable
         }
 
