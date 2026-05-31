@@ -8,6 +8,8 @@
 	<string>skap</string>
 	<key>CFBundleExecutable</key>
 	<string>Skap</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.danielecostarella.skap</string>
 	<key>CFBundleInfoDictionaryVersion</key>

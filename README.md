@@ -25,6 +25,12 @@ open dist/Skap.app
 
 The generated app bundle uses `com.danielecostarella.skap` as its bundle identifier and is ad-hoc signed for local development.
 
+To regenerate the app icon:
+
+```sh
+scripts/generate-app-icon.swift
+```
+
 ## Run
 
 ```sh
