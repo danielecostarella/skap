@@ -7,6 +7,7 @@ final class SkapAppModel: ObservableObject {
     @Published var lastCapture: CapturedImage?
     @Published var statusMessage = "Ready"
     @Published private(set) var hasSavedArea = false
+    @Published private(set) var savedAreaSummary = "No saved area"
 
     private let coordinator = SkapCoordinator()
     private let areaSelectionController = AreaSelectionController()
@@ -16,10 +17,16 @@ final class SkapAppModel: ObservableObject {
     private let shortcutController = GlobalShortcutController()
 
     init() {
-        hasSavedArea = savedAreaStore.savedArea != nil
+        refreshSavedAreaState()
 
-        shortcutController.onCaptureRequested = { [weak self] in
-            Task { await self?.captureScreen() }
+        shortcutController.onCaptureAreaRequested = { [weak self] in
+            self?.beginAreaCapture()
+        }
+        shortcutController.onCaptureSameAreaRequested = { [weak self] in
+            self?.captureSavedArea()
+        }
+        shortcutController.onCaptureWindowRequested = { [weak self] in
+            self?.beginWindowCapture()
         }
     }
 
@@ -53,6 +60,12 @@ final class SkapAppModel: ObservableObject {
         }
 
         Task { await captureArea(savedArea, message: "Captured same area to clipboard") }
+    }
+
+    func clearSavedArea() {
+        savedAreaStore.savedArea = nil
+        refreshSavedAreaState()
+        statusMessage = "Saved area cleared"
     }
 
     func beginWindowCapture() {
@@ -92,6 +105,17 @@ final class SkapAppModel: ObservableObject {
 
     private func saveArea(_ pixelRect: CGRect) {
         savedAreaStore.savedArea = pixelRect
+        refreshSavedAreaState()
+    }
+
+    private func refreshSavedAreaState() {
+        guard let savedArea = savedAreaStore.savedArea else {
+            hasSavedArea = false
+            savedAreaSummary = "No saved area"
+            return
+        }
+
         hasSavedArea = true
+        savedAreaSummary = "\(Int(savedArea.width)) x \(Int(savedArea.height)) px at \(Int(savedArea.minX)), \(Int(savedArea.minY))"
     }
 }

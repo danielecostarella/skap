@@ -7,12 +7,25 @@ struct SettingsView: View {
         Form {
             Section("Capture") {
                 Toggle("Copy screenshots to clipboard immediately", isOn: .constant(true))
-                Text("Global shortcut customization will live here.")
+                    .disabled(true)
+                LabeledContent("Saved area", value: appModel.savedAreaSummary)
+                Button("Clear Saved Area") {
+                    appModel.clearSavedArea()
+                }
+                .disabled(!appModel.hasSavedArea)
+            }
+
+            Section("Shortcuts") {
+                Text("Capture Area: Cmd+Shift+2")
+                    .foregroundStyle(.secondary)
+                Text("Capture Same Area: Cmd+Shift+3")
+                    .foregroundStyle(.secondary)
+                Text("Capture Window: Cmd+Shift+4")
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 220)
+        .frame(width: 460, height: 300)
         .padding()
     }
 }

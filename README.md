@@ -29,6 +29,13 @@ swift run skap --help
 - `Capture Window`: click a window to capture only that window.
 - `Capture Area`: drag a rectangle to capture a portion of the screen. The selected area is saved for reuse.
 - `Capture Same Area`: captures the last selected area again without asking you to redraw it.
+- Settings show the saved area coordinates and let you clear the saved area.
+
+## Default Shortcuts
+
+- `Cmd+Shift+2`: Capture Area.
+- `Cmd+Shift+3`: Capture Same Area.
+- `Cmd+Shift+4`: Capture Window.
 
 ## Xcode
 

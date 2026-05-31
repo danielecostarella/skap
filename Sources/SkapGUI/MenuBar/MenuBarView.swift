@@ -11,15 +11,18 @@ struct MenuBarView: View {
         Button("Capture Window") {
             appModel.beginWindowCapture()
         }
+        .keyboardShortcut("4", modifiers: [.command, .shift])
 
         Button("Capture Area") {
             appModel.beginAreaCapture()
         }
+        .keyboardShortcut("2", modifiers: [.command, .shift])
 
         Button("Capture Same Area") {
             appModel.captureSavedArea()
         }
         .disabled(!appModel.hasSavedArea)
+        .keyboardShortcut("3", modifiers: [.command, .shift])
 
         Button("Edit Last Capture (coming soon)") {}
             .disabled(true)
