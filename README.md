@@ -1,5 +1,11 @@
 # skap
 
+![CI](https://github.com/danielecostarella/skap/actions/workflows/ci.yml/badge.svg)
+![Release](https://img.shields.io/github/v/release/danielecostarella/skap)
+![Platform](https://img.shields.io/badge/platform-macOS%2014%2B-lightgrey)
+![Swift](https://img.shields.io/badge/Swift-6.0-orange)
+![License](https://img.shields.io/github/license/danielecostarella/skap)
+
 `skap` is a native, privacy-first macOS screenshot app: fast capture, instant clipboard, reusable capture areas, annotation editor, and a scriptable CLI.
 
 The project is split into three modules:
