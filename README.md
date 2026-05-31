@@ -29,6 +29,7 @@ swift run skap --help
 - `Capture Window`: click a window to capture only that window.
 - `Capture Area`: drag a rectangle to capture a portion of the screen. The selected area is saved for reuse.
 - `Capture Same Area`: captures the last selected area again without asking you to redraw it.
+- Saved areas remember the display they were selected on, which keeps repeat captures predictable on multi-monitor setups.
 - Settings show the saved area coordinates and let you clear the saved area.
 - Settings show whether macOS Screen Recording permission is granted.
 - `skap same-area`: captures the saved area from scripts or automation.

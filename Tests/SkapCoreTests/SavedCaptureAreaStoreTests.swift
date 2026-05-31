@@ -8,7 +8,10 @@ import Testing
         .appendingPathComponent(UUID().uuidString)
         .appendingPathComponent("saved-area.json")
     let store = SavedCaptureAreaStore(fileURL: url)
-    let rect = CGRect(x: 10, y: 20, width: 300, height: 200)
+    let rect = CaptureArea(
+        displayID: 123,
+        pixelRect: CGRect(x: 10, y: 20, width: 300, height: 200)
+    )
 
     store.savedArea = rect
 

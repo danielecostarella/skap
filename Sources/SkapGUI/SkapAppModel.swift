@@ -124,10 +124,10 @@ final class SkapAppModel: ObservableObject {
         screenRecordingPermissionSummary = ScreenRecordingPermission.isGranted ? "Granted" : "Not granted"
     }
 
-    private func captureArea(_ pixelRect: CGRect, message: String) async {
+    private func captureArea(_ area: CaptureArea, message: String) async {
         do {
             let image = try await coordinator.capture(
-                options: CaptureOptions(mode: .area(pixelRect))
+                options: CaptureOptions(mode: .area(area))
             )
             lastCapture = image
             statusMessage = message
@@ -137,8 +137,8 @@ final class SkapAppModel: ObservableObject {
         }
     }
 
-    private func saveArea(_ pixelRect: CGRect) {
-        savedAreaStore.savedArea = pixelRect
+    private func saveArea(_ area: CaptureArea) {
+        savedAreaStore.savedArea = area
         refreshSavedAreaState()
     }
 
@@ -161,6 +161,6 @@ final class SkapAppModel: ObservableObject {
         }
 
         hasSavedArea = true
-        savedAreaSummary = "\(Int(savedArea.width)) x \(Int(savedArea.height)) px at \(Int(savedArea.minX)), \(Int(savedArea.minY))"
+        savedAreaSummary = "\(Int(savedArea.pixelRect.width)) x \(Int(savedArea.pixelRect.height)) px on display \(savedArea.displayID)"
     }
 }

@@ -1,4 +1,6 @@
 import AppKit
+import CoreGraphics
+import SkapCore
 import SwiftUI
 
 @MainActor
@@ -6,7 +8,7 @@ final class AreaSelectionController {
     private var panel: NSPanel?
 
     func beginSelection(
-        onSelected: @escaping @MainActor (CGRect) -> Void,
+        onSelected: @escaping @MainActor (CaptureArea) -> Void,
         onCancel: @escaping @MainActor () -> Void
     ) {
         guard let screen = NSScreen.main else {
@@ -49,7 +51,7 @@ final class AreaSelectionController {
                         width: rect.width * scale,
                         height: rect.height * scale
                     )
-                    onSelected(pixelRect)
+                    onSelected(CaptureArea(displayID: screen.displayID, pixelRect: pixelRect))
                 },
                 onCancel: { [weak self] in
                     self?.dismiss()
@@ -66,5 +68,11 @@ final class AreaSelectionController {
     private func dismiss() {
         panel?.orderOut(nil)
         panel = nil
+    }
+}
+
+private extension NSScreen {
+    var displayID: CGDirectDisplayID {
+        deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID ?? CGMainDisplayID()
     }
 }

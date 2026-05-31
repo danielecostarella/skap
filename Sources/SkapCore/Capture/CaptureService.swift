@@ -40,8 +40,8 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
             throw CaptureError.unsupportedMode("current window")
         case .window(.id(let windowID)):
             return try await captureWindow(windowID)
-        case .area(let rect):
-            return try await captureArea(rect)
+        case .area(let area):
+            return try await captureArea(area)
         }
     }
 
@@ -54,9 +54,9 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
         )
     }
 
-    private func captureArea(_ rect: CGRect) async throws -> CapturedImage {
-        let image = try await captureMainDisplayImage()
-        let boundedRect = rect.integral.intersection(
+    private func captureArea(_ area: CaptureArea) async throws -> CapturedImage {
+        let image = try await captureDisplayImage(displayID: area.displayID)
+        let boundedRect = area.pixelRect.integral.intersection(
             CGRect(x: 0, y: 0, width: image.width, height: image.height)
         )
 
@@ -112,6 +112,23 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
             throw CaptureError.noDisplayAvailable
         }
 
+        return try await captureDisplayImage(display: display)
+    }
+
+    private func captureDisplayImage(displayID: CGDirectDisplayID) async throws -> CGImage {
+        let content = try await SCShareableContent.excludingDesktopWindows(
+            false,
+            onScreenWindowsOnly: true
+        )
+
+        guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
+            throw CaptureError.noDisplayAvailable
+        }
+
+        return try await captureDisplayImage(display: display)
+    }
+
+    private func captureDisplayImage(display: SCDisplay) async throws -> CGImage {
         let filter = SCContentFilter(display: display, excludingWindows: [])
         let configuration = SCStreamConfiguration()
         configuration.width = display.width

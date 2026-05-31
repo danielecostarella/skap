@@ -8,13 +8,21 @@ public struct SavedCaptureAreaStore {
         self.fileURL = fileURL
     }
 
-    public var savedArea: CGRect? {
+    public var savedArea: CaptureArea? {
         get {
             guard let data = try? Data(contentsOf: fileURL) else {
                 return nil
             }
 
-            return try? JSONDecoder().decode(CGRect.self, from: data)
+            if let captureArea = try? JSONDecoder().decode(CaptureArea.self, from: data) {
+                return captureArea
+            }
+
+            if let legacyRect = try? JSONDecoder().decode(CGRect.self, from: data) {
+                return CaptureArea(displayID: CGMainDisplayID(), pixelRect: legacyRect)
+            }
+
+            return nil
         }
         nonmutating set {
             guard let newValue else {

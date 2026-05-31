@@ -4,7 +4,17 @@ import Foundation
 public enum CaptureMode: Sendable, Equatable {
     case screen
     case window(WindowSelection)
-    case area(CGRect)
+    case area(CaptureArea)
+}
+
+public struct CaptureArea: Codable, Sendable, Equatable {
+    public var displayID: CGDirectDisplayID
+    public var pixelRect: CGRect
+
+    public init(displayID: CGDirectDisplayID, pixelRect: CGRect) {
+        self.displayID = displayID
+        self.pixelRect = pixelRect
+    }
 }
 
 public enum WindowSelection: Sendable, Equatable {
