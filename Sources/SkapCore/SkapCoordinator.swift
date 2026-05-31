@@ -9,7 +9,7 @@ public actor SkapCoordinator {
     public init(
         captureService: any ScreenCapturing = ScreenCaptureKitCaptureService(),
         clipboardWriter: any ClipboardWriting = PasteboardClipboardWriter(),
-        fileWriter: any ImageFileWriting = PNGImageFileWriter()
+        fileWriter: any ImageFileWriting = ImageFileWriter()
     ) {
         self.captureService = captureService
         self.clipboardWriter = clipboardWriter
@@ -25,7 +25,7 @@ public actor SkapCoordinator {
         }
 
         if let outputURL = options.outputURL {
-            try fileWriter.writePNG(image.cgImage, to: outputURL)
+            try fileWriter.write(image.cgImage, to: outputURL, format: options.imageFormat)
         }
 
         return image

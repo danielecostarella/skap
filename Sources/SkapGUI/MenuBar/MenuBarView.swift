@@ -29,22 +29,25 @@ struct MenuBarView: View {
         .disabled(!appModel.hasSavedArea)
         .keyboardShortcut("3", modifiers: [.command, .shift])
 
-        Button("Edit Last Capture (coming soon)") {}
-            .disabled(true)
+        Button("Edit Last Capture") {
+            appModel.editLastCapture()
+        }
+        .disabled(appModel.lastCapture == nil)
 
         Divider()
 
         SettingsLink {
-            Text("Settings...")
+            Text("Settings…")
         }
 
         Divider()
 
         Text(appModel.statusMessage)
+            .foregroundStyle(.secondary)
 
         Divider()
 
-        Button("Quit") {
+        Button("Quit skap") {
             NSApplication.shared.terminate(nil)
         }
     }

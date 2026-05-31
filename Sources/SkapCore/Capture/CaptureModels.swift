@@ -33,17 +33,20 @@ public struct CaptureOptions: Sendable, Equatable {
     public var copyToClipboard: Bool
     public var outputURL: URL?
     public var pinAfterCapture: Bool
+    public var imageFormat: ImageFormat
 
     public init(
         mode: CaptureMode,
         copyToClipboard: Bool = true,
         outputURL: URL? = nil,
-        pinAfterCapture: Bool = false
+        pinAfterCapture: Bool = false,
+        imageFormat: ImageFormat = .png
     ) {
         self.mode = mode
         self.copyToClipboard = copyToClipboard
         self.outputURL = outputURL
         self.pinAfterCapture = pinAfterCapture
+        self.imageFormat = imageFormat
     }
 }
 

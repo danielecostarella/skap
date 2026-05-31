@@ -1,88 +1,165 @@
 # skap
 
-`skap` is a native, privacy-first macOS screenshot app: fast capture, instant clipboard, reusable capture areas, lightweight annotation, and a scriptable CLI.
+`skap` is a native, privacy-first macOS screenshot app: fast capture, instant clipboard, reusable capture areas, annotation editor, and a scriptable CLI.
 
-The project is intentionally split into three modules:
+The project is split into three modules:
 
-- `SkapCore`: ScreenCaptureKit capture, clipboard, image processing, annotation models.
-- `SkapGUI`: menu bar app, global shortcut handling, SwiftUI overlay editor, and reusable capture areas.
+- `SkapCore`: ScreenCaptureKit capture, clipboard, image processing, annotation renderer.
+- `SkapGUI`: menu bar app, global shortcuts, SwiftUI overlays, annotation editor, onboarding.
 - `skap-cli`: terminal interface powered by Swift Argument Parser.
 
-## Build
+## Try it
+
+Build and open the app bundle:
 
 ```sh
-swift build
-```
-
-## Package the macOS App
-
-```sh
-scripts/package-app.sh
+bash scripts/package-app.sh
 open dist/Skap.app
 ```
 
-The generated app bundle uses `com.danielecostarella.skap` as its bundle identifier and is ad-hoc signed for local development.
-
-To install the generated app locally:
+Or install to `~/Applications`:
 
 ```sh
-scripts/install-app.sh
+bash scripts/install-app.sh
 open ~/Applications/Skap.app
 ```
 
-Set `INSTALL_DIR=/Applications` if you want to install into the system Applications folder.
+Set `INSTALL_DIR=/Applications` for the system Applications folder.
 
-To regenerate the app icon:
-
-```sh
-scripts/generate-app-icon.swift
-```
-
-## Run
+## Build from source
 
 ```sh
-swift run Skap
-swift run skap --help
+swift build
+swift run Skap          # GUI app
+swift run skap --help   # CLI
 ```
 
-## Current Capture Modes
-
-- `Capture Full Screen`: captures the main display and copies it to the clipboard.
-- `Capture All Displays`: captures all connected displays as one stitched image.
-- `Capture Window`: click a window to capture only that window.
-- `skap window --current`: captures the frontmost window from scripts or automation.
-- `Capture Area`: drag a rectangle to capture a portion of the screen. The selected area is saved for reuse.
-- `Capture Same Area`: captures the last selected area again without asking you to redraw it.
-- Saved areas remember the display they were selected on, which keeps repeat captures predictable on multi-monitor setups.
-- Area and window selection overlays appear on every connected display.
-- Settings show the saved area coordinates and let you clear the saved area.
-- Settings show whether macOS Screen Recording permission is granted.
-- Settings let you show or hide the capture HUD.
-- `skap same-area`: captures the saved area from scripts or automation.
-- `skap screen --display main|all|<display-id>`: captures the main display, every display, or a specific display.
-
-## Default Shortcuts
-
-- `Cmd+Shift+1`: Capture Full Screen.
-- `Cmd+Shift+2`: Capture Area.
-- `Cmd+Shift+3`: Capture Same Area.
-- `Cmd+Shift+4`: Capture Window.
-
-## Xcode
-
-Open the package directly in Xcode:
+Open in Xcode:
 
 ```sh
 xed .
 ```
 
-The Swift package is the source of truth for targets and dependencies. A generated `.xcodeproj` can be added later for release signing and `.app` archive automation if needed.
+## Capture modes
+
+| Action | Shortcut (default) |
+|--------|--------------------|
+| Capture Full Screen | ⌘⇧1 |
+| Capture Area | ⌘⇧2 |
+| Capture Same Area | ⌘⇧3 |
+| Capture Window | ⌘⇧4 |
+| Capture All Displays | — |
+| Edit Last Capture | menu |
+
+All shortcuts are customisable in **Settings → Shortcuts**.
+
+Saved areas remember the display they were selected on, keeping repeat captures predictable on multi-monitor setups.
+
+## Settings
+
+- **Show capture HUD** — floating thumbnail after every capture.
+- **Play capture sound** — native macOS screenshot sound.
+- **Copy to clipboard** — write the capture to the system clipboard.
+- **Save to file** — auto-save every capture to a chosen folder.
+- **Format** — PNG or JPEG.
+- **Shortcuts** — click any shortcut field and press a new key combination.
+- **Saved area** — shows coordinates and lets you clear the saved area.
+
+## CLI
+
+```sh
+# Capture full screen
+skap screen
+skap screen --display all --format jpeg --output ~/Desktop/shot.jpg
+
+# Capture a specific area (pixels on the main display)
+skap area --rect 0,0,1280,800
+skap area --rect 100,100,800,600 --display 1 --output ~/Desktop/shot.png --json
+
+# Capture the area saved from the GUI
+skap same-area
+skap same-area --output ~/Desktop/area.png --format jpeg
+
+# Capture active window
+skap window --current
+
+# Manage the saved area
+skap saved-area show
+skap saved-area show --json
+skap saved-area clear
+
+# Read/write settings
+skap config list
+skap config get format
+skap config set save-to-file true
+skap config set format jpeg
+skap config set save-folder ~/Screenshots
+```
+
+### JSON output
+
+All capture commands accept `--json` and print a structured result to stdout:
+
+```json
+{
+  "success": true,
+  "width": 1280,
+  "height": 800,
+  "format": "png",
+  "path": "/Users/dan/Desktop/Screenshot 2026-05-31 at 15.00.00.png",
+  "copiedToClipboard": false
+}
+```
+
+## Annotation editor
+
+After a capture, choose **Edit Last Capture** from the menu bar. A window opens with the captured image and a toolbar:
+
+| Tool | Description |
+|------|-------------|
+| Arrow (→) | Directional arrow |
+| Rectangle (□) | Stroked rectangle |
+| Ellipse (○) | Stroked ellipse |
+| Text (T) | Click to place text |
+| Redact (👁‍🗨) | Pixelate a region |
+| Highlight (✏️) | Semi-transparent yellow fill |
+
+Click **Done** to apply annotations and copy the result to the clipboard. **Undo** removes the last element.
+
+## Permissions
+
+On first launch, skap shows a guided onboarding flow to request Screen Recording permission. After granting it in System Settings you may need to restart skap.
+
+You can also manage permissions in **Settings → Permissions**.
+
+## Release
+
+Releases are built automatically by GitHub Actions when a tag is pushed:
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The workflow produces a signed `.app` bundle, a `.zip`, and a `.dmg`, then publishes a GitHub Release with checksums.
+
+> **Notarisation** requires an Apple Developer account. The workflow contains commented-out steps — add `APPLE_ID`, `APPLE_TEAM_ID`, and `APPLE_APP_PASSWORD` as repository secrets to enable it.
+
+## Homebrew
+
+After the first release, install via a tap:
+
+```sh
+brew install --cask daniele-costarella/skap/skap
+```
+
+> The tap (`daniele-costarella/homebrew-skap`) is a separate repository created after the first stable release.
 
 ## Maintainer
 
 Created and maintained by [Daniele Costarella](https://github.com/danielecostarella).
 
-For bugs, feature requests, and discussions, please use [GitHub Issues](https://github.com/danielecostarella/skap/issues).
+Bugs, feature requests, and discussions: [GitHub Issues](https://github.com/danielecostarella/skap/issues).
 
 ## License
 

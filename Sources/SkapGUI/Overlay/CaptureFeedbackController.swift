@@ -8,11 +8,19 @@ final class CaptureFeedbackController {
     private var dismissTask: Task<Void, Never>?
 
     func show(image: CapturedImage, message: String) {
+        let view = CaptureFeedbackView(image: image, message: message, isError: false)
+        present(view: view, duration: 1.4)
+    }
+
+    func showError(message: String) {
+        let view = CaptureFeedbackView(image: nil, message: message, isError: true)
+        present(view: view, duration: 3.0)
+    }
+
+    private func present(view: some View, duration: Double) {
         dismissTask?.cancel()
 
-        guard let screen = NSScreen.main else {
-            return
-        }
+        guard let screen = NSScreen.main else { return }
 
         let size = NSSize(width: 260, height: 88)
         let margin: CGFloat = 24
@@ -37,15 +45,13 @@ final class CaptureFeedbackController {
         feedbackPanel.hasShadow = false
         feedbackPanel.ignoresMouseEvents = true
         feedbackPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        feedbackPanel.contentView = NSHostingView(
-            rootView: CaptureFeedbackView(image: image, message: message)
-        )
+        feedbackPanel.contentView = NSHostingView(rootView: AnyView(view))
 
         panel = feedbackPanel
         feedbackPanel.orderFrontRegardless()
 
         dismissTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(1.4))
+            try? await Task.sleep(for: .seconds(duration))
             self?.dismiss()
         }
     }

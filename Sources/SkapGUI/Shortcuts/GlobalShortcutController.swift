@@ -1,5 +1,6 @@
 import Carbon
 import Foundation
+import SkapCore
 
 @MainActor
 final class GlobalShortcutController {
@@ -16,11 +17,48 @@ final class GlobalShortcutController {
     }
 
     private var eventHandler: EventHandlerRef?
-    private var hotKeys: [EventHotKeyRef] = []
+    private var hotKeyRefs: [ShortcutID: EventHotKeyRef] = [:]
 
-    init() {
+    init(shortcuts: [ShortcutAction: ShortcutConfig] = ShortcutConfig.defaults) {
         installEventHandler()
-        registerDefaultShortcuts()
+        registerShortcuts(from: shortcuts)
+    }
+
+    func updateShortcut(action: ShortcutAction, config: ShortcutConfig) {
+        let id = shortcutID(for: action)
+        if let ref = hotKeyRefs[id] {
+            UnregisterEventHotKey(ref)
+            hotKeyRefs.removeValue(forKey: id)
+        }
+        registerShortcut(keyCode: config.keyCode, modifiers: config.modifiers, id: id)
+    }
+
+    private func registerShortcuts(from shortcuts: [ShortcutAction: ShortcutConfig]) {
+        for (action, config) in shortcuts {
+            let id = shortcutID(for: action)
+            registerShortcut(keyCode: config.keyCode, modifiers: config.modifiers, id: id)
+        }
+    }
+
+    private func registerShortcut(keyCode: UInt32, modifiers: UInt32, id: ShortcutID) {
+        var hotKeyRef: EventHotKeyRef?
+        let hotKeyID = EventHotKeyID(
+            signature: fourCharacterCode("SKAP"),
+            id: id.rawValue
+        )
+
+        let status = RegisterEventHotKey(
+            keyCode,
+            modifiers,
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &hotKeyRef
+        )
+
+        if status == noErr, let hotKeyRef {
+            hotKeyRefs[id] = hotKeyRef
+        }
     }
 
     private func installEventHandler() {
@@ -68,34 +106,6 @@ final class GlobalShortcutController {
         )
     }
 
-    private func registerDefaultShortcuts() {
-        registerShortcut(keyCode: 18, id: .captureScreen)
-        registerShortcut(keyCode: 19, id: .captureArea)
-        registerShortcut(keyCode: 20, id: .captureSameArea)
-        registerShortcut(keyCode: 21, id: .captureWindow)
-    }
-
-    private func registerShortcut(keyCode: UInt32, id: ShortcutID) {
-        var hotKeyRef: EventHotKeyRef?
-        let hotKeyID = EventHotKeyID(
-            signature: fourCharacterCode("SKAP"),
-            id: id.rawValue
-        )
-
-        let status = RegisterEventHotKey(
-            keyCode,
-            UInt32(cmdKey | shiftKey),
-            hotKeyID,
-            GetApplicationEventTarget(),
-            0,
-            &hotKeyRef
-        )
-
-        if status == noErr, let hotKeyRef {
-            hotKeys.append(hotKeyRef)
-        }
-    }
-
     private func handleShortcut(id: UInt32) {
         switch ShortcutID(rawValue: id) {
         case .captureScreen:
@@ -108,6 +118,15 @@ final class GlobalShortcutController {
             onCaptureWindowRequested?()
         case nil:
             break
+        }
+    }
+
+    private func shortcutID(for action: ShortcutAction) -> ShortcutID {
+        switch action {
+        case .captureScreen:   .captureScreen
+        case .captureArea:     .captureArea
+        case .captureSameArea: .captureSameArea
+        case .captureWindow:   .captureWindow
         }
     }
 
