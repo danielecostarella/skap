@@ -81,6 +81,7 @@ func drawCentered(_ text: String, cx: CGFloat, y: CGFloat, size: CGFloat, alpha:
     let str  = CFAttributedStringCreate(nil, text as CFString, attrs)!
     let line = CTLineCreateWithAttributedString(str)
     let tw   = CTLineGetTypographicBounds(line, nil, nil, nil)
+    ctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
     ctx.textPosition = CGPoint(x: cx - tw / 2, y: y)
     CTLineDraw(line, ctx)
 }
