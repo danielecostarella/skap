@@ -35,8 +35,8 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
 
     public func capture(options: CaptureOptions) async throws -> CapturedImage {
         switch options.mode {
-        case .screen:
-            return try await captureMainDisplay()
+        case .screen(let selection):
+            return try await captureScreen(selection)
         case .window(.current):
             return try await captureWindow(try currentWindowID())
         case .window(.id(let windowID)):
@@ -46,12 +46,25 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
         }
     }
 
-    private func captureMainDisplay() async throws -> CapturedImage {
-        let image = try await captureMainDisplayImage()
+    private func captureScreen(_ selection: ScreenSelection) async throws -> CapturedImage {
+        let image: CGImage
+        let modeDescription: String
+
+        switch selection {
+        case .main:
+            image = try await captureMainDisplayImage()
+            modeDescription = "screen"
+        case .display(let displayID):
+            image = try await captureDisplayImage(displayID: displayID)
+            modeDescription = "display"
+        case .all:
+            image = try await captureAllDisplayImage()
+            modeDescription = "all-displays"
+        }
 
         return CapturedImage(
             cgImage: image,
-            metadata: CaptureMetadata(modeDescription: "screen")
+            metadata: CaptureMetadata(modeDescription: modeDescription)
         )
     }
 
@@ -143,6 +156,25 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
         return try await captureDisplayImage(display: display)
     }
 
+    private func captureAllDisplayImage() async throws -> CGImage {
+        let content = try await SCShareableContent.excludingDesktopWindows(
+            false,
+            onScreenWindowsOnly: true
+        )
+
+        guard !content.displays.isEmpty else {
+            throw CaptureError.noDisplayAvailable
+        }
+
+        var captures: [DisplayCapture] = []
+        for display in content.displays {
+            let image = try await captureDisplayImage(display: display)
+            captures.append(DisplayCapture(display: display, image: image))
+        }
+
+        return try stitchDisplayCaptures(captures)
+    }
+
     private func captureDisplayImage(displayID: CGDirectDisplayID) async throws -> CGImage {
         let content = try await SCShareableContent.excludingDesktopWindows(
             false,
@@ -168,4 +200,52 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
             configuration: configuration
         )
     }
+
+    private nonisolated func stitchDisplayCaptures(_ captures: [DisplayCapture]) throws -> CGImage {
+        let unionFrame = captures
+            .map(\.display.frame)
+            .reduce(CGRect.null) { $0.union($1) }
+            .integral
+
+        guard
+            unionFrame.width > 0,
+            unionFrame.height > 0,
+            let context = CGContext(
+                data: nil,
+                width: Int(unionFrame.width),
+                height: Int(unionFrame.height),
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        else {
+            throw CaptureError.imageCreationFailed
+        }
+
+        context.setFillColor(CGColor(gray: 0, alpha: 0))
+        context.fill(CGRect(origin: .zero, size: unionFrame.size))
+
+        for capture in captures {
+            let frame = capture.display.frame
+            let drawRect = CGRect(
+                x: frame.minX - unionFrame.minX,
+                y: unionFrame.maxY - frame.maxY,
+                width: frame.width,
+                height: frame.height
+            )
+            context.draw(capture.image, in: drawRect)
+        }
+
+        guard let stitchedImage = context.makeImage() else {
+            throw CaptureError.imageCreationFailed
+        }
+
+        return stitchedImage
+    }
+}
+
+private struct DisplayCapture {
+    let display: SCDisplay
+    let image: CGImage
 }

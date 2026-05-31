@@ -48,15 +48,18 @@ swift run skap --help
 ## Current Capture Modes
 
 - `Capture Full Screen`: captures the main display and copies it to the clipboard.
+- `Capture All Displays`: captures all connected displays as one stitched image.
 - `Capture Window`: click a window to capture only that window.
 - `skap window --current`: captures the frontmost window from scripts or automation.
 - `Capture Area`: drag a rectangle to capture a portion of the screen. The selected area is saved for reuse.
 - `Capture Same Area`: captures the last selected area again without asking you to redraw it.
 - Saved areas remember the display they were selected on, which keeps repeat captures predictable on multi-monitor setups.
+- Area and window selection overlays appear on every connected display.
 - Settings show the saved area coordinates and let you clear the saved area.
 - Settings show whether macOS Screen Recording permission is granted.
 - Settings let you show or hide the capture HUD.
 - `skap same-area`: captures the saved area from scripts or automation.
+- `skap screen --display main|all|<display-id>`: captures the main display, every display, or a specific display.
 
 ## Default Shortcuts
 

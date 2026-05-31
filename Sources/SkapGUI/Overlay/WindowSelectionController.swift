@@ -4,17 +4,37 @@ import Darwin
 
 @MainActor
 final class WindowSelectionController {
-    private var panel: NSPanel?
+    private var panels: [NSPanel] = []
 
     func beginSelection(
         onSelected: @escaping @MainActor (CGWindowID) -> Void,
         onCancel: @escaping @MainActor () -> Void
     ) {
-        guard let screen = NSScreen.main else {
+        let screens = NSScreen.screens
+
+        guard !screens.isEmpty else {
             onCancel()
             return
         }
 
+        dismiss()
+
+        for screen in screens {
+            showSelectionPanel(
+                on: screen,
+                onSelected: onSelected,
+                onCancel: onCancel
+            )
+        }
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+
+    private func showSelectionPanel(
+        on screen: NSScreen,
+        onSelected: @escaping @MainActor (CGWindowID) -> Void,
+        onCancel: @escaping @MainActor () -> Void
+    ) {
         let selectionPanel = NSPanel(
             contentRect: screen.frame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -44,15 +64,16 @@ final class WindowSelectionController {
         selectionPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         selectionPanel.contentView = pickerView
 
-        panel = selectionPanel
+        panels.append(selectionPanel)
         selectionPanel.makeKeyAndOrderFront(nil)
         selectionPanel.makeFirstResponder(pickerView)
-        NSApplication.shared.activate(ignoringOtherApps: true)
     }
 
     private func dismiss() {
-        panel?.orderOut(nil)
-        panel = nil
+        for panel in panels {
+            panel.orderOut(nil)
+        }
+        panels.removeAll()
     }
 }
 
@@ -171,14 +192,13 @@ private final class WindowSelectionView: NSView {
                 return nil
             }
 
-            let localRect = CGRect(
-                x: quartzRect.minX - targetScreen.frame.minX,
-                y: quartzRect.minY,
-                width: quartzRect.width,
-                height: quartzRect.height
-            )
+            let localRect = targetScreen.localWindowRect(fromGlobalWindowRect: quartzRect)
 
             guard localRect.width >= 24, localRect.height >= 24 else {
+                return nil
+            }
+
+            guard bounds.intersects(localRect) else {
                 return nil
             }
 
@@ -190,4 +210,15 @@ private final class WindowSelectionView: NSView {
 private struct WindowCandidate {
     let id: CGWindowID
     let rect: CGRect
+}
+
+private extension NSScreen {
+    func localWindowRect(fromGlobalWindowRect rect: CGRect) -> CGRect {
+        CGRect(
+            x: rect.minX - frame.minX,
+            y: rect.minY - frame.minY,
+            width: rect.width,
+            height: rect.height
+        )
+    }
 }

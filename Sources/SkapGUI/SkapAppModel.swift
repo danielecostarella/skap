@@ -43,16 +43,24 @@ final class SkapAppModel: ObservableObject {
     }
 
     func captureScreen() async {
+        await captureScreen(.main)
+    }
+
+    func captureAllDisplays() async {
+        await captureScreen(.all)
+    }
+
+    private func captureScreen(_ selection: ScreenSelection) async {
         guard screenRecordingPermissionIsGranted() else {
             return
         }
 
         do {
             let image = try await coordinator.capture(
-                options: CaptureOptions(mode: .screen)
+                options: CaptureOptions(mode: .screen(selection))
             )
             lastCapture = image
-            statusMessage = "Captured to clipboard"
+            statusMessage = selection == .all ? "Captured all displays to clipboard" : "Captured to clipboard"
             showCaptureFeedback(image: image)
         } catch {
             statusMessage = error.localizedDescription

@@ -1,4 +1,5 @@
 import ArgumentParser
+import CoreGraphics
 import Foundation
 import SkapCore
 
@@ -84,16 +85,33 @@ struct Screen: AsyncParsableCommand {
     @Option(name: .long, help: "Write the screenshot to this path.")
     var output: String?
 
+    @Option(name: .long, help: "Display to capture: main, all, or a numeric display ID.")
+    var display = "main"
+
     func run() async throws {
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
         let coordinator = SkapCoordinator()
         _ = try await coordinator.capture(
             options: CaptureOptions(
-                mode: .screen,
+                mode: .screen(try screenSelection()),
                 copyToClipboard: outputURL == nil,
                 outputURL: outputURL
             )
         )
+    }
+
+    private func screenSelection() throws -> ScreenSelection {
+        switch display.lowercased() {
+        case "main":
+            return .main
+        case "all":
+            return .all
+        default:
+            guard let displayID = CGDirectDisplayID(display) else {
+                throw ValidationError("--display must be main, all, or a numeric display ID.")
+            }
+            return .display(displayID)
+        }
     }
 }
 

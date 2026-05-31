@@ -5,17 +5,37 @@ import SwiftUI
 
 @MainActor
 final class AreaSelectionController {
-    private var panel: NSPanel?
+    private var panels: [NSPanel] = []
 
     func beginSelection(
         onSelected: @escaping @MainActor (CaptureArea) -> Void,
         onCancel: @escaping @MainActor () -> Void
     ) {
-        guard let screen = NSScreen.main else {
+        let screens = NSScreen.screens
+
+        guard !screens.isEmpty else {
             onCancel()
             return
         }
 
+        dismiss()
+
+        for screen in screens {
+            showSelectionPanel(
+                on: screen,
+                onSelected: onSelected,
+                onCancel: onCancel
+            )
+        }
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+
+    private func showSelectionPanel(
+        on screen: NSScreen,
+        onSelected: @escaping @MainActor (CaptureArea) -> Void,
+        onCancel: @escaping @MainActor () -> Void
+    ) {
         let selectionPanel = NSPanel(
             contentRect: screen.frame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -60,14 +80,15 @@ final class AreaSelectionController {
             )
         )
 
-        panel = selectionPanel
+        panels.append(selectionPanel)
         selectionPanel.makeKeyAndOrderFront(nil)
-        NSApplication.shared.activate(ignoringOtherApps: true)
     }
 
     private func dismiss() {
-        panel?.orderOut(nil)
-        panel = nil
+        for panel in panels {
+            panel.orderOut(nil)
+        }
+        panels.removeAll()
     }
 }
 

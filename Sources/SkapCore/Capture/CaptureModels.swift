@@ -2,9 +2,15 @@ import CoreGraphics
 import Foundation
 
 public enum CaptureMode: Sendable, Equatable {
-    case screen
+    case screen(ScreenSelection)
     case window(WindowSelection)
     case area(CaptureArea)
+}
+
+public enum ScreenSelection: Sendable, Equatable {
+    case main
+    case display(CGDirectDisplayID)
+    case all
 }
 
 public struct CaptureArea: Codable, Sendable, Equatable {
