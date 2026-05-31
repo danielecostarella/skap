@@ -120,6 +120,11 @@ final class SkapAppModel: ObservableObject {
         refreshPermissionState()
     }
 
+    func openScreenRecordingSettings() {
+        ScreenRecordingPermission.openSystemSettings()
+        statusMessage = "Opened Screen Recording settings"
+    }
+
     func refreshPermissionState() {
         screenRecordingPermissionSummary = ScreenRecordingPermission.isGranted ? "Granted" : "Not granted"
     }

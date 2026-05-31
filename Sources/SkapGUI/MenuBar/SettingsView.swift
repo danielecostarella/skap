@@ -10,6 +10,9 @@ struct SettingsView: View {
                 Button("Request Screen Recording Permission") {
                     appModel.requestScreenRecordingPermission()
                 }
+                Button("Open Screen Recording Settings") {
+                    appModel.openScreenRecordingSettings()
+                }
             }
 
             Section("Capture") {

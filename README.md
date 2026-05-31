@@ -2,8 +2,6 @@
 
 `skap` is a native, privacy-first macOS screenshot app: fast capture, instant clipboard, reusable capture areas, lightweight annotation, and a scriptable CLI.
 
-Created and maintained by Daniele Costarella.
-
 The project is intentionally split into three modules:
 
 - `SkapCore`: ScreenCaptureKit capture, clipboard, image processing, annotation models.
@@ -75,6 +73,12 @@ xed .
 ```
 
 The Swift package is the source of truth for targets and dependencies. A generated `.xcodeproj` can be added later for release signing and `.app` archive automation if needed.
+
+## Maintainer
+
+Created and maintained by [Daniele Costarella](https://github.com/danielecostarella).
+
+For bugs, feature requests, and discussions, please use [GitHub Issues](https://github.com/danielecostarella/skap/issues).
 
 ## License
 
