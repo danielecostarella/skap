@@ -18,6 +18,7 @@ command -v create-dmg >/dev/null 2>&1 || { echo "error: create-dmg not found (br
 echo "Generating DMG background…"
 swift "$ROOT_DIR/scripts/generate-dmg-background.swift" "$BG_IMAGE"
 
+rm -f "$OUTPUT"
 echo "Creating DMG…"
 create-dmg \
     --volname "Skap $VERSION" \
