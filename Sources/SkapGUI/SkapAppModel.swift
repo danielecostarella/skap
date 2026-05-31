@@ -180,7 +180,7 @@ final class SkapAppModel: ObservableObject {
 
     private func playCaptureSoundIfEnabled() {
         guard settings.captureSound else { return }
-        NSSound(named: .init("Screenshot"))?.play()
+        (NSSound(named: .init("Tink")) ?? NSSound(named: .init("Pop")))?.play()
     }
 
     private func screenRecordingPermissionIsGranted() -> Bool {

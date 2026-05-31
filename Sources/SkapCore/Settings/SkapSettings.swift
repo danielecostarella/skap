@@ -15,7 +15,7 @@ public struct SkapSettings: Sendable, Equatable {
         saveToFile: Bool = false,
         defaultSaveFolder: URL = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Desktop"),
         imageFormat: ImageFormat = .png,
-        captureSound: Bool = true,
+        captureSound: Bool = false,
         shortcuts: [ShortcutAction: ShortcutConfig] = ShortcutConfig.defaults
     ) {
         self.showsCaptureHUD = showsCaptureHUD
@@ -57,7 +57,7 @@ public struct SkapSettingsStore {
                 saveToFile: userDefaults.bool(forKey: Key.saveToFile),
                 defaultSaveFolder: folder,
                 imageFormat: format,
-                captureSound: userDefaults.object(forKey: Key.captureSound) as? Bool ?? true,
+                captureSound: userDefaults.object(forKey: Key.captureSound) as? Bool ?? false,
                 shortcuts: shortcuts
             )
         }
