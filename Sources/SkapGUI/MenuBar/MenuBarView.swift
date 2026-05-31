@@ -30,6 +30,12 @@ struct MenuBarView: View {
 
         Divider()
 
+        SettingsLink {
+            Text("Settings...")
+        }
+
+        Divider()
+
         Text(appModel.statusMessage)
 
         Divider()
