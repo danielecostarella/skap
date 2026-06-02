@@ -72,6 +72,7 @@ struct AnnotationEditorView: View {
                     .frame(width: 26, height: 26)
             }
             .buttonStyle(.borderless)
+            .keyboardShortcut("z", modifiers: .command)
             .disabled(elements.isEmpty)
             .help("Undo")
 

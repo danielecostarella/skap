@@ -398,12 +398,14 @@ struct ConfigSet: AsyncParsableCommand {
             settings.saveToFile = try parseBool(value, key: key)
         case "save-folder":
             let url = URL(fileURLWithPath: NSString(string: value).expandingTildeInPath)
-            guard FileManager.default.fileExists(atPath: url.path) else {
-                throw ValidationError("Folder '\(value)' does not exist.")
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else {
+                throw ValidationError("'\(value)' is not an existing directory.")
             }
             settings.defaultSaveFolder = url
         case "format":
-            guard let format = ImageFormat(rawValue: value.lowercased()) else {
+            guard let format = try? parseFormat(value) else {
                 throw ValidationError("Invalid format '\(value)'. Use 'png' or 'jpeg'.")
             }
             settings.imageFormat = format
@@ -430,7 +432,12 @@ struct ConfigSet: AsyncParsableCommand {
 // MARK: - Helpers
 
 private func parseFormat(_ string: String) throws -> ImageFormat {
-    guard let format = ImageFormat(rawValue: string.lowercased()) else {
+    let normalized = string.lowercased()
+    if normalized == "jpg" {
+        return .jpeg
+    }
+
+    guard let format = ImageFormat(rawValue: normalized) else {
         throw ValidationError("Invalid format '\(string)'. Use 'png' or 'jpeg'.")
     }
     return format

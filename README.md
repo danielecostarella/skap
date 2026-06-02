@@ -54,7 +54,7 @@ xed .
 | Capture Area | ⌘⇧2 |
 | Capture Same Area | ⌘⇧3 |
 | Capture Window | ⌘⇧4 |
-| Capture All Displays | — |
+| Capture All Displays | ⌘⇧5 |
 | Edit Last Capture | menu |
 
 All shortcuts are customisable in **Settings → Shortcuts**.

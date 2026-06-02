@@ -1,6 +1,7 @@
 import CoreGraphics
 import Darwin
 import Foundation
+@preconcurrency import AppKit
 @preconcurrency import ScreenCaptureKit
 
 public protocol ScreenCapturing: Sendable {
@@ -162,7 +163,7 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
             throw CaptureError.noDisplayAvailable
         }
 
-        return try await captureDisplayImage(display: display)
+        return try await captureDisplayImage(display: display, scale: displayScale(for: display))
     }
 
     private func captureAllDisplayImage() async throws -> CGImage {
@@ -177,8 +178,9 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
 
         var captures: [DisplayCapture] = []
         for display in content.displays {
-            let image = try await captureDisplayImage(display: display)
-            captures.append(DisplayCapture(display: display, image: image))
+            let scale = displayScale(for: display)
+            let image = try await captureDisplayImage(display: display, scale: scale)
+            captures.append(DisplayCapture(display: display, image: image, scale: scale))
         }
 
         return try stitchDisplayCaptures(captures)
@@ -194,10 +196,10 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
             throw CaptureError.noDisplayAvailable
         }
 
-        return try await captureDisplayImage(display: display)
+        return try await captureDisplayImage(display: display, scale: displayScale(for: display))
     }
 
-    private func captureDisplayImage(display: SCDisplay, scale: CGFloat = 1) async throws -> CGImage {
+    private func captureDisplayImage(display: SCDisplay, scale: CGFloat) async throws -> CGImage {
         let filter = SCContentFilter(display: display, excludingWindows: [])
         let configuration = SCStreamConfiguration()
         configuration.width = Int((CGFloat(display.width) * scale).rounded())
@@ -210,9 +212,15 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
         )
     }
 
+    private nonisolated func displayScale(for display: SCDisplay) -> CGFloat {
+        NSScreen.screens.first { screen in
+            screen.displayID == display.displayID
+        }?.backingScaleFactor ?? 1
+    }
+
     private nonisolated func stitchDisplayCaptures(_ captures: [DisplayCapture]) throws -> CGImage {
         let unionFrame = captures
-            .map(\.display.frame)
+            .map(\.scaledFrame)
             .reduce(CGRect.null) { $0.union($1) }
             .integral
 
@@ -236,7 +244,7 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
         context.fill(CGRect(origin: .zero, size: unionFrame.size))
 
         for capture in captures {
-            let frame = capture.display.frame
+            let frame = capture.scaledFrame
             let drawRect = CGRect(
                 x: frame.minX - unionFrame.minX,
                 y: unionFrame.maxY - frame.maxY,
@@ -257,4 +265,20 @@ public actor ScreenCaptureKitCaptureService: ScreenCapturing {
 private struct DisplayCapture {
     let display: SCDisplay
     let image: CGImage
+    let scale: CGFloat
+
+    var scaledFrame: CGRect {
+        CGRect(
+            x: display.frame.minX * scale,
+            y: display.frame.minY * scale,
+            width: display.frame.width * scale,
+            height: display.frame.height * scale
+        )
+    }
+}
+
+private extension NSScreen {
+    var displayID: CGDirectDisplayID? {
+        deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID
+    }
 }
