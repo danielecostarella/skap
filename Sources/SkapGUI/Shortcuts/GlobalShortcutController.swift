@@ -2,6 +2,20 @@ import Carbon
 import Foundation
 import SkapCore
 
+private final class CarbonHotKeyResources {
+    var eventHandler: EventHandlerRef?
+    var hotKeyRefs: [UInt32: EventHotKeyRef] = [:]
+
+    deinit {
+        for ref in hotKeyRefs.values {
+            UnregisterEventHotKey(ref)
+        }
+        if let eventHandler {
+            RemoveEventHandler(eventHandler)
+        }
+    }
+}
+
 @MainActor
 final class GlobalShortcutController {
     var onCaptureScreenRequested: (() -> Void)?
@@ -18,8 +32,7 @@ final class GlobalShortcutController {
         case captureAllDisplays = 5
     }
 
-    private var eventHandler: EventHandlerRef?
-    private var hotKeyRefs: [ShortcutID: EventHotKeyRef] = [:]
+    private let carbonResources = CarbonHotKeyResources()
 
     init(shortcuts: [ShortcutAction: ShortcutConfig] = ShortcutConfig.defaults) {
         installEventHandler()
@@ -28,9 +41,9 @@ final class GlobalShortcutController {
 
     func updateShortcut(action: ShortcutAction, config: ShortcutConfig) {
         let id = shortcutID(for: action)
-        if let ref = hotKeyRefs[id] {
+        if let ref = carbonResources.hotKeyRefs[id.rawValue] {
             UnregisterEventHotKey(ref)
-            hotKeyRefs.removeValue(forKey: id)
+            carbonResources.hotKeyRefs.removeValue(forKey: id.rawValue)
         }
         registerShortcut(keyCode: config.keyCode, modifiers: config.modifiers, id: id)
     }
@@ -59,7 +72,7 @@ final class GlobalShortcutController {
         )
 
         if status == noErr, let hotKeyRef {
-            hotKeyRefs[id] = hotKeyRef
+            carbonResources.hotKeyRefs[id.rawValue] = hotKeyRef
         }
     }
 
@@ -100,7 +113,7 @@ final class GlobalShortcutController {
             1,
             &eventType,
             Unmanaged.passUnretained(self).toOpaque(),
-            &eventHandler
+            &carbonResources.eventHandler
         )
     }
 

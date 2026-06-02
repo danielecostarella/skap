@@ -214,11 +214,25 @@ private struct WindowCandidate {
 
 private extension NSScreen {
     func localWindowRect(fromGlobalWindowRect rect: CGRect) -> CGRect {
-        CGRect(
-            x: rect.minX - frame.minX,
-            y: rect.minY - frame.minY,
+        let quartzFrame = quartzScreenFrame
+        return CGRect(
+            x: rect.minX - quartzFrame.minX,
+            y: rect.minY - quartzFrame.minY,
             width: rect.width,
             height: rect.height
+        )
+    }
+
+    private var quartzScreenFrame: CGRect {
+        let primaryHeight = NSScreen.screens
+            .first { $0.frame.origin == .zero }?
+            .frame.height ?? NSScreen.main?.frame.height ?? frame.height
+
+        return CGRect(
+            x: frame.minX,
+            y: primaryHeight - frame.maxY,
+            width: frame.width,
+            height: frame.height
         )
     }
 }

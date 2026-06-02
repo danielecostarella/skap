@@ -8,6 +8,7 @@ struct AnnotationEditorView: View {
     let onCancel: () -> Void
 
     @State private var elements: [AnnotationElement] = []
+    @State private var redoStack: [AnnotationElement] = []
     @State private var selectedTool: AnnotationTool = .arrow
     @State private var selectedColor: AnnotationColor = .red
     @State private var dragStart: CGPoint?
@@ -66,7 +67,7 @@ struct AnnotationEditorView: View {
             Divider().frame(height: 20).padding(.horizontal, 4)
 
             Button {
-                if !elements.isEmpty { elements.removeLast() }
+                undo()
             } label: {
                 Image(systemName: "arrow.uturn.backward")
                     .frame(width: 26, height: 26)
@@ -75,6 +76,17 @@ struct AnnotationEditorView: View {
             .keyboardShortcut("z", modifiers: .command)
             .disabled(elements.isEmpty)
             .help("Undo")
+
+            Button {
+                redo()
+            } label: {
+                Image(systemName: "arrow.uturn.forward")
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.borderless)
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+            .disabled(redoStack.isEmpty)
+            .help("Redo")
 
             Spacer()
 
@@ -222,7 +234,7 @@ struct AnnotationEditorView: View {
             .onEnded { value in
                 if selectedTool == .pen {
                     if penPoints.count > 1 {
-                        elements.append(AnnotationElement(
+                        commitElement(AnnotationElement(
                             tool: .pen,
                             frame: boundingBox(of: penPoints),
                             color: selectedColor,
@@ -237,7 +249,7 @@ struct AnnotationEditorView: View {
                     } else {
                         let element = makeElement(from: start, to: value.location)
                         if abs(element.frame.size.width) > 2 || abs(element.frame.size.height) > 2 {
-                            elements.append(element)
+                            commitElement(element)
                         }
                     }
                     dragStart = nil
@@ -279,13 +291,13 @@ struct AnnotationEditorView: View {
             .font(.system(size: 18, weight: .bold))
             .foregroundColor(selectedColor.swiftUIColor)
             .frame(width: 200)
-            .position(x: min(position.x + 100, canvasSize.width - 100), y: position.y)
-            .onSubmit { commitText(at: position) }
+            .position(textFieldCenter(for: position, in: canvasSize))
+            .onSubmit { commitText(at: textAnnotationOrigin(for: position, in: canvasSize)) }
     }
 
     private func commitText(at position: CGPoint) {
         if !pendingText.isEmpty {
-            elements.append(AnnotationElement(
+            commitElement(AnnotationElement(
                 tool: .text,
                 frame: CGRect(origin: position, size: .zero),
                 text: pendingText,
@@ -304,6 +316,21 @@ struct AnnotationEditorView: View {
             : CGSize(width: CGFloat(baseImage.width), height: CGFloat(baseImage.height))
         let rendered = AnnotationRenderer().render(elements: elements, onto: baseImage, viewSize: viewSize)
         onDone(rendered ?? baseImage)
+    }
+
+    private func commitElement(_ element: AnnotationElement) {
+        elements.append(element)
+        redoStack.removeAll()
+    }
+
+    private func undo() {
+        guard let element = elements.popLast() else { return }
+        redoStack.append(element)
+    }
+
+    private func redo() {
+        guard let element = redoStack.popLast() else { return }
+        elements.append(element)
     }
 
     // MARK: - Helpers
@@ -330,6 +357,18 @@ struct AnnotationEditorView: View {
         case .highlight: "Rectangle Highlight"
         case .redact:    "Redact"
         }
+    }
+
+    private func textFieldCenter(for position: CGPoint, in canvasSize: CGSize) -> CGPoint {
+        CGPoint(
+            x: min(position.x + 100, max(canvasSize.width - 100, 100)),
+            y: position.y
+        )
+    }
+
+    private func textAnnotationOrigin(for position: CGPoint, in canvasSize: CGSize) -> CGPoint {
+        let center = textFieldCenter(for: position, in: canvasSize)
+        return CGPoint(x: center.x - 100, y: center.y)
     }
 }
 

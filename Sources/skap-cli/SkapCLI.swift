@@ -55,6 +55,9 @@ struct Window: AsyncParsableCommand {
     @Option(name: .long, help: "Write the screenshot to this path.")
     var output: String?
 
+    @Option(name: .long, help: "Image format: png, jpeg, or jpg (default: saved preference).")
+    var format: String?
+
     @Flag(name: .long, help: "Output result as JSON.")
     var json = false
 
@@ -63,13 +66,15 @@ struct Window: AsyncParsableCommand {
             throw ValidationError("Use --current. Window picking by ID is not yet implemented.")
         }
 
+        let imageFormat = try preferredImageFormat(override: format)
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
         let coordinator = SkapCoordinator()
         let image = try await coordinator.capture(
             options: CaptureOptions(
                 mode: .window(.current),
                 copyToClipboard: outputURL == nil,
-                outputURL: outputURL
+                outputURL: outputURL,
+                imageFormat: imageFormat
             )
         )
 
@@ -77,7 +82,7 @@ struct Window: AsyncParsableCommand {
             success: true,
             width: image.cgImage.width,
             height: image.cgImage.height,
-            format: "png",
+            format: imageFormat.rawValue,
             path: outputURL?.path,
             copiedToClipboard: outputURL == nil
         ), json: json)
@@ -97,8 +102,8 @@ struct Area: AsyncParsableCommand {
     @Option(name: .long, help: "Display ID (default: main display).")
     var display: CGDirectDisplayID?
 
-    @Option(name: .long, help: "Image format: png or jpeg (default: png).")
-    var format: String = "png"
+    @Option(name: .long, help: "Image format: png, jpeg, or jpg (default: saved preference).")
+    var format: String?
 
     @Option(name: .long, help: "Write the screenshot to this path.")
     var output: String?
@@ -114,7 +119,7 @@ struct Area: AsyncParsableCommand {
         let parsedRect = try parseRect(rectString)
         let displayID = display ?? CGMainDisplayID()
         let area = CaptureArea(displayID: displayID, pixelRect: parsedRect)
-        let imageFormat = try parseFormat(format)
+        let imageFormat = try preferredImageFormat(override: format)
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
 
         let coordinator = SkapCoordinator()
@@ -160,8 +165,8 @@ struct SameArea: AsyncParsableCommand {
     @Option(name: .long, help: "Write the screenshot to this path.")
     var output: String?
 
-    @Option(name: .long, help: "Image format: png or jpeg (default: png).")
-    var format: String = "png"
+    @Option(name: .long, help: "Image format: png, jpeg, or jpg (default: saved preference).")
+    var format: String?
 
     @Flag(name: .long, help: "Output result as JSON.")
     var json = false
@@ -173,7 +178,7 @@ struct SameArea: AsyncParsableCommand {
             throw ValidationError("No saved area found. Use 'Capture Area' in the GUI first.")
         }
 
-        let imageFormat = try parseFormat(format)
+        let imageFormat = try preferredImageFormat(override: format)
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
         let coordinator = SkapCoordinator()
         let image = try await coordinator.capture(
@@ -209,14 +214,14 @@ struct Screen: AsyncParsableCommand {
     @Option(name: .long, help: "Display to capture: main, all, or a numeric display ID.")
     var display = "main"
 
-    @Option(name: .long, help: "Image format: png or jpeg (default: png).")
-    var format: String = "png"
+    @Option(name: .long, help: "Image format: png, jpeg, or jpg (default: saved preference).")
+    var format: String?
 
     @Flag(name: .long, help: "Output result as JSON.")
     var json = false
 
     func run() async throws {
-        let imageFormat = try parseFormat(format)
+        let imageFormat = try preferredImageFormat(override: format)
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
         let coordinator = SkapCoordinator()
         let image = try await coordinator.capture(
@@ -441,4 +446,11 @@ private func parseFormat(_ string: String) throws -> ImageFormat {
         throw ValidationError("Invalid format '\(string)'. Use 'png' or 'jpeg'.")
     }
     return format
+}
+
+private func preferredImageFormat(override: String?) throws -> ImageFormat {
+    if let override {
+        return try parseFormat(override)
+    }
+    return SkapSettingsStore().settings.imageFormat
 }
