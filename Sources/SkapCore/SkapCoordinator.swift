@@ -25,7 +25,12 @@ public actor SkapCoordinator {
         }
 
         if let outputURL = options.outputURL {
-            try fileWriter.write(image.cgImage, to: outputURL, format: options.imageFormat)
+            try fileWriter.write(
+                image.cgImage,
+                to: outputURL,
+                format: options.imageFormat,
+                jpegQuality: options.jpegQuality
+            )
         }
 
         return image

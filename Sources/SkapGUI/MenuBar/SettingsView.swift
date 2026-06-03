@@ -62,6 +62,19 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                     .fixedSize()
                 }
+
+                if appModel.settings.imageFormat == .jpeg {
+                    LabeledContent("JPEG quality") {
+                        HStack {
+                            Slider(value: $appModel.settings.jpegQuality, in: 0.1...1, step: 0.05)
+                                .frame(width: 180)
+                            Text("\(Int(appModel.settings.jpegQuality * 100))%")
+                                .monospacedDigit()
+                                .foregroundStyle(.secondary)
+                                .frame(width: 44, alignment: .trailing)
+                        }
+                    }
+                }
             }
         }
     }

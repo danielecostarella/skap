@@ -4,7 +4,7 @@ import ImageIO
 import UniformTypeIdentifiers
 
 public protocol ImageFileWriting: Sendable {
-    func write(_ image: CGImage, to url: URL, format: ImageFormat) throws
+    func write(_ image: CGImage, to url: URL, format: ImageFormat, jpegQuality: Double) throws
 }
 
 public enum ImageFileWriterError: LocalizedError, Sendable {
@@ -24,7 +24,7 @@ public enum ImageFileWriterError: LocalizedError, Sendable {
 public struct ImageFileWriter: ImageFileWriting {
     public init() {}
 
-    public func write(_ image: CGImage, to url: URL, format: ImageFormat) throws {
+    public func write(_ image: CGImage, to url: URL, format: ImageFormat, jpegQuality: Double = 0.85) throws {
         let utType: UTType = format == .png ? .png : .jpeg
 
         guard let destination = CGImageDestinationCreateWithURL(
@@ -36,10 +36,23 @@ public struct ImageFileWriter: ImageFileWriting {
             throw ImageFileWriterError.cannotCreateDestination(url)
         }
 
-        CGImageDestinationAddImage(destination, image, nil)
+        if format == .jpeg {
+            let properties = [
+                kCGImageDestinationLossyCompressionQuality: jpegQuality.clamped(to: 0...1)
+            ] as CFDictionary
+            CGImageDestinationAddImage(destination, image, properties)
+        } else {
+            CGImageDestinationAddImage(destination, image, nil)
+        }
 
         guard CGImageDestinationFinalize(destination) else {
             throw ImageFileWriterError.cannotFinalize(url)
         }
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

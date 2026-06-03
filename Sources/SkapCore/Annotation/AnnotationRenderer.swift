@@ -35,7 +35,8 @@ public struct AnnotationRenderer: Sendable {
 
         for element in elements {
             let scaled = scale(element, scaleX: scaleX, scaleY: scaleY)
-            render(element: scaled, onto: image, in: context, imageSize: CGSize(width: width, height: height))
+            let metrics = AnnotationMetrics(scale: max((scaleX + scaleY) / 2, 1))
+            render(element: scaled, onto: image, in: context, imageSize: CGSize(width: width, height: height), metrics: metrics)
         }
 
         return context.makeImage()
@@ -59,7 +60,13 @@ public struct AnnotationRenderer: Sendable {
         )
     }
 
-    private func render(element: AnnotationElement, onto baseImage: CGImage, in context: CGContext, imageSize: CGSize) {
+    private func render(
+        element: AnnotationElement,
+        onto baseImage: CGImage,
+        in context: CGContext,
+        imageSize: CGSize,
+        metrics: AnnotationMetrics
+    ) {
         context.saveGState()
         defer { context.restoreGState() }
 
@@ -67,18 +74,18 @@ public struct AnnotationRenderer: Sendable {
         case .arrow:
             let start = element.frame.origin
             let end = CGPoint(x: start.x + element.frame.size.width, y: start.y + element.frame.size.height)
-            drawArrow(from: start, to: end, color: element.color, in: context)
+            drawArrow(from: start, to: end, color: element.color, in: context, metrics: metrics)
 
         case .rectangle:
             context.setStrokeColor(element.color.cgColor)
-            context.setLineWidth(lineWidth)
+            context.setLineWidth(metrics.lineWidth)
             context.setLineCap(.round)
             context.setLineJoin(.round)
             context.stroke(element.frame.standardized)
 
         case .ellipse:
             context.setStrokeColor(element.color.cgColor)
-            context.setLineWidth(lineWidth)
+            context.setLineWidth(metrics.lineWidth)
             context.strokeEllipse(in: element.frame.standardized)
 
         case .highlight:
@@ -87,12 +94,12 @@ public struct AnnotationRenderer: Sendable {
 
         case .pen:
             if let pts = element.points, pts.count > 1 {
-                drawPen(pts, color: element.color, in: context)
+                drawPen(pts, color: element.color, in: context, metrics: metrics)
             }
 
         case .text:
             if let text = element.text, !text.isEmpty {
-                drawText(text, at: element.frame.origin, color: element.color, in: context)
+                drawText(text, at: element.frame.origin, color: element.color, in: context, metrics: metrics)
             }
 
         case .redact:
@@ -106,9 +113,9 @@ public struct AnnotationRenderer: Sendable {
         }
     }
 
-    private func drawArrow(from start: CGPoint, to end: CGPoint, color: AnnotationColor, in context: CGContext) {
+    private func drawArrow(from start: CGPoint, to end: CGPoint, color: AnnotationColor, in context: CGContext, metrics: AnnotationMetrics) {
         context.setStrokeColor(color.cgColor)
-        context.setLineWidth(lineWidth)
+        context.setLineWidth(metrics.lineWidth)
         context.setLineCap(.round)
 
         context.move(to: start)
@@ -116,7 +123,7 @@ public struct AnnotationRenderer: Sendable {
         context.strokePath()
 
         let angle = atan2(end.y - start.y, end.x - start.x)
-        let headLength: CGFloat = max(lineWidth * 5, 16)
+        let headLength: CGFloat = max(metrics.lineWidth * 5, 16 * metrics.scale)
         let headAngle: CGFloat = .pi / 6
 
         context.move(to: end)
@@ -132,9 +139,9 @@ public struct AnnotationRenderer: Sendable {
         context.strokePath()
     }
 
-    private func drawPen(_ points: [CGPoint], color: AnnotationColor, in context: CGContext) {
+    private func drawPen(_ points: [CGPoint], color: AnnotationColor, in context: CGContext, metrics: AnnotationMetrics) {
         context.setStrokeColor(color.highlightCGColor())
-        context.setLineWidth(18)
+        context.setLineWidth(metrics.highlightWidth)
         context.setLineCap(.round)
         context.setLineJoin(.round)
         context.move(to: points[0])
@@ -144,8 +151,8 @@ public struct AnnotationRenderer: Sendable {
         context.strokePath()
     }
 
-    private func drawText(_ text: String, at origin: CGPoint, color: AnnotationColor, in context: CGContext) {
-        let font = CTFontCreateWithName("Helvetica-Bold" as CFString, 18, nil)
+    private func drawText(_ text: String, at origin: CGPoint, color: AnnotationColor, in context: CGContext, metrics: AnnotationMetrics) {
+        let font = CTFontCreateWithName("Helvetica-Bold" as CFString, metrics.fontSize, nil)
         let attrs = [kCTFontAttributeName: font, kCTForegroundColorAttributeName: color.cgColor] as CFDictionary
         let attrString = CFAttributedStringCreate(nil, text as CFString, attrs)!
         let line = CTLineCreateWithAttributedString(attrString)
@@ -181,5 +188,10 @@ public struct AnnotationRenderer: Sendable {
         context.draw(blurred, in: frame)
     }
 
-    private var lineWidth: CGFloat { 3 }
+    private struct AnnotationMetrics {
+        var scale: CGFloat
+        var lineWidth: CGFloat { 3 * scale }
+        var highlightWidth: CGFloat { 18 * scale }
+        var fontSize: CGFloat { 18 * scale }
+    }
 }

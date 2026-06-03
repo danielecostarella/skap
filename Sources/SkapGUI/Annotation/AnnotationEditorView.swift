@@ -186,8 +186,7 @@ struct AnnotationEditorView: View {
             }
 
         case .redact:
-            let path = Path(element.frame.standardized)
-            context.fill(path, with: .color(.black.opacity(0.5)))
+            drawRedactionPreview(in: element.frame.standardized, context: &context)
         }
     }
 
@@ -217,6 +216,30 @@ struct AnnotationEditorView: View {
         for p in points.dropFirst() { path.addLine(to: p) }
         context.stroke(path, with: .color(color.swiftUIColor.opacity(0.4)),
                        style: StrokeStyle(lineWidth: 18, lineCap: .round, lineJoin: .round))
+    }
+
+    private func drawRedactionPreview(in rect: CGRect, context: inout GraphicsContext) {
+        let rect = rect.standardized
+        guard rect.width > 0, rect.height > 0 else { return }
+
+        context.fill(Path(rect), with: .color(.black.opacity(0.18)))
+
+        let blockSize: CGFloat = 10
+        let columns = Int(ceil(rect.width / blockSize))
+        let rows = Int(ceil(rect.height / blockSize))
+
+        for column in 0..<columns {
+            for row in 0..<rows {
+                let block = CGRect(
+                    x: rect.minX + CGFloat(column) * blockSize,
+                    y: rect.minY + CGFloat(row) * blockSize,
+                    width: min(blockSize, rect.maxX - (rect.minX + CGFloat(column) * blockSize)),
+                    height: min(blockSize, rect.maxY - (rect.minY + CGFloat(row) * blockSize))
+                )
+                let opacity = (column + row).isMultiple(of: 2) ? 0.62 : 0.38
+                context.fill(Path(block), with: .color(.black.opacity(opacity)))
+            }
+        }
     }
 
     // MARK: - Gesture

@@ -6,6 +6,7 @@ public struct SkapSettings: Sendable, Equatable {
     public var saveToFile: Bool
     public var defaultSaveFolder: URL
     public var imageFormat: ImageFormat
+    public var jpegQuality: Double
     public var captureSound: Bool
     public var shortcuts: [ShortcutAction: ShortcutConfig]
 
@@ -15,6 +16,7 @@ public struct SkapSettings: Sendable, Equatable {
         saveToFile: Bool = false,
         defaultSaveFolder: URL = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Desktop"),
         imageFormat: ImageFormat = .png,
+        jpegQuality: Double = 0.85,
         captureSound: Bool = false,
         shortcuts: [ShortcutAction: ShortcutConfig] = ShortcutConfig.defaults
     ) {
@@ -23,6 +25,7 @@ public struct SkapSettings: Sendable, Equatable {
         self.saveToFile = saveToFile
         self.defaultSaveFolder = defaultSaveFolder
         self.imageFormat = imageFormat
+        self.jpegQuality = jpegQuality
         self.captureSound = captureSound
         self.shortcuts = shortcuts
     }
@@ -37,6 +40,7 @@ public struct SkapSettingsStore {
         static let saveToFile = "saveToFile"
         static let defaultSaveFolder = "defaultSaveFolder"
         static let imageFormat = "imageFormat"
+        static let jpegQuality = "jpegQuality"
         static let captureSound = "captureSound"
         static let shortcuts = "shortcuts"
     }
@@ -50,6 +54,7 @@ public struct SkapSettingsStore {
             let shortcuts = loadShortcuts()
             let folder = loadSaveFolder()
             let format = ImageFormat(rawValue: userDefaults.string(forKey: Key.imageFormat) ?? "") ?? .png
+            let jpegQuality = userDefaults.object(forKey: Key.jpegQuality) as? Double ?? 0.85
 
             return SkapSettings(
                 showsCaptureHUD: userDefaults.object(forKey: Key.showsCaptureHUD) as? Bool ?? true,
@@ -57,6 +62,7 @@ public struct SkapSettingsStore {
                 saveToFile: userDefaults.bool(forKey: Key.saveToFile),
                 defaultSaveFolder: folder,
                 imageFormat: format,
+                jpegQuality: jpegQuality.clamped(to: 0...1),
                 captureSound: userDefaults.object(forKey: Key.captureSound) as? Bool ?? false,
                 shortcuts: shortcuts
             )
@@ -67,6 +73,7 @@ public struct SkapSettingsStore {
             userDefaults.set(newValue.saveToFile, forKey: Key.saveToFile)
             userDefaults.set(newValue.defaultSaveFolder.path, forKey: Key.defaultSaveFolder)
             userDefaults.set(newValue.imageFormat.rawValue, forKey: Key.imageFormat)
+            userDefaults.set(newValue.jpegQuality.clamped(to: 0...1), forKey: Key.jpegQuality)
             userDefaults.set(newValue.captureSound, forKey: Key.captureSound)
             saveShortcuts(newValue.shortcuts)
         }
@@ -99,5 +106,11 @@ public struct SkapSettingsStore {
             return URL(fileURLWithPath: path)
         }
         return FileManager.default.homeDirectoryForCurrentUser.appending(path: "Desktop")
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

@@ -233,7 +233,8 @@ final class SkapAppModel: ObservableObject {
             mode: mode,
             copyToClipboard: settings.copyToClipboard,
             outputURL: settings.saveToFile ? autoSaveURL() : nil,
-            imageFormat: settings.imageFormat
+            imageFormat: settings.imageFormat,
+            jpegQuality: settings.jpegQuality
         )
     }
 

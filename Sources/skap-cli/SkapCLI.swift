@@ -58,6 +58,9 @@ struct Window: AsyncParsableCommand {
     @Option(name: .long, help: "Image format: png, jpeg, or jpg (default: saved preference).")
     var format: String?
 
+    @Option(name: .long, help: "JPEG quality from 0.0 to 1.0 (default: saved preference).")
+    var quality: Double?
+
     @Flag(name: .long, help: "Output result as JSON.")
     var json = false
 
@@ -67,6 +70,7 @@ struct Window: AsyncParsableCommand {
         }
 
         let imageFormat = try preferredImageFormat(override: format)
+        let jpegQuality = try preferredJPEGQuality(override: quality)
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
         let coordinator = SkapCoordinator()
         let image = try await coordinator.capture(
@@ -74,7 +78,8 @@ struct Window: AsyncParsableCommand {
                 mode: .window(.current),
                 copyToClipboard: outputURL == nil,
                 outputURL: outputURL,
-                imageFormat: imageFormat
+                imageFormat: imageFormat,
+                jpegQuality: jpegQuality
             )
         )
 
@@ -105,6 +110,9 @@ struct Area: AsyncParsableCommand {
     @Option(name: .long, help: "Image format: png, jpeg, or jpg (default: saved preference).")
     var format: String?
 
+    @Option(name: .long, help: "JPEG quality from 0.0 to 1.0 (default: saved preference).")
+    var quality: Double?
+
     @Option(name: .long, help: "Write the screenshot to this path.")
     var output: String?
 
@@ -120,6 +128,7 @@ struct Area: AsyncParsableCommand {
         let displayID = display ?? CGMainDisplayID()
         let area = CaptureArea(displayID: displayID, pixelRect: parsedRect)
         let imageFormat = try preferredImageFormat(override: format)
+        let jpegQuality = try preferredJPEGQuality(override: quality)
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
 
         let coordinator = SkapCoordinator()
@@ -128,7 +137,8 @@ struct Area: AsyncParsableCommand {
                 mode: .area(area),
                 copyToClipboard: outputURL == nil,
                 outputURL: outputURL,
-                imageFormat: imageFormat
+                imageFormat: imageFormat,
+                jpegQuality: jpegQuality
             )
         )
 
@@ -168,6 +178,9 @@ struct SameArea: AsyncParsableCommand {
     @Option(name: .long, help: "Image format: png, jpeg, or jpg (default: saved preference).")
     var format: String?
 
+    @Option(name: .long, help: "JPEG quality from 0.0 to 1.0 (default: saved preference).")
+    var quality: Double?
+
     @Flag(name: .long, help: "Output result as JSON.")
     var json = false
 
@@ -179,6 +192,7 @@ struct SameArea: AsyncParsableCommand {
         }
 
         let imageFormat = try preferredImageFormat(override: format)
+        let jpegQuality = try preferredJPEGQuality(override: quality)
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
         let coordinator = SkapCoordinator()
         let image = try await coordinator.capture(
@@ -186,7 +200,8 @@ struct SameArea: AsyncParsableCommand {
                 mode: .area(savedArea),
                 copyToClipboard: outputURL == nil,
                 outputURL: outputURL,
-                imageFormat: imageFormat
+                imageFormat: imageFormat,
+                jpegQuality: jpegQuality
             )
         )
 
@@ -217,11 +232,15 @@ struct Screen: AsyncParsableCommand {
     @Option(name: .long, help: "Image format: png, jpeg, or jpg (default: saved preference).")
     var format: String?
 
+    @Option(name: .long, help: "JPEG quality from 0.0 to 1.0 (default: saved preference).")
+    var quality: Double?
+
     @Flag(name: .long, help: "Output result as JSON.")
     var json = false
 
     func run() async throws {
         let imageFormat = try preferredImageFormat(override: format)
+        let jpegQuality = try preferredJPEGQuality(override: quality)
         let outputURL = output.map { URL(fileURLWithPath: NSString(string: $0).expandingTildeInPath) }
         let coordinator = SkapCoordinator()
         let image = try await coordinator.capture(
@@ -229,7 +248,8 @@ struct Screen: AsyncParsableCommand {
                 mode: .screen(try screenSelection()),
                 copyToClipboard: outputURL == nil,
                 outputURL: outputURL,
-                imageFormat: imageFormat
+                imageFormat: imageFormat,
+                jpegQuality: jpegQuality
             )
         )
 
@@ -335,7 +355,7 @@ struct ConfigCommand: AsyncParsableCommand {
     )
 }
 
-private let configKeys = ["hud", "clipboard", "save-to-file", "save-folder", "format", "sound"]
+private let configKeys = ["hud", "clipboard", "save-to-file", "save-folder", "format", "jpeg-quality", "sound"]
 
 struct ConfigList: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
@@ -350,6 +370,7 @@ struct ConfigList: AsyncParsableCommand {
         print("save-to-file   = \(settings.saveToFile)")
         print("save-folder    = \(settings.defaultSaveFolder.path)")
         print("format         = \(settings.imageFormat.rawValue)")
+        print("jpeg-quality   = \(settings.jpegQuality)")
         print("sound          = \(settings.captureSound)")
     }
 }
@@ -371,6 +392,7 @@ struct ConfigGet: AsyncParsableCommand {
         case "save-to-file": print(settings.saveToFile)
         case "save-folder":  print(settings.defaultSaveFolder.path)
         case "format":       print(settings.imageFormat.rawValue)
+        case "jpeg-quality": print(settings.jpegQuality)
         case "sound":        print(settings.captureSound)
         default:
             throw ValidationError("Unknown key '\(key)'. Available: \(configKeys.joined(separator: ", "))")
@@ -414,6 +436,11 @@ struct ConfigSet: AsyncParsableCommand {
                 throw ValidationError("Invalid format '\(value)'. Use 'png' or 'jpeg'.")
             }
             settings.imageFormat = format
+        case "jpeg-quality":
+            guard let quality = Double(value), (0...1).contains(quality) else {
+                throw ValidationError("'jpeg-quality' expects a number between 0.0 and 1.0.")
+            }
+            settings.jpegQuality = quality
         case "sound":
             settings.captureSound = try parseBool(value, key: key)
         default:
@@ -453,4 +480,14 @@ private func preferredImageFormat(override: String?) throws -> ImageFormat {
         return try parseFormat(override)
     }
     return SkapSettingsStore().settings.imageFormat
+}
+
+private func preferredJPEGQuality(override: Double?) throws -> Double {
+    if let override {
+        guard (0...1).contains(override) else {
+            throw ValidationError("--quality must be between 0.0 and 1.0.")
+        }
+        return override
+    }
+    return SkapSettingsStore().settings.jpegQuality
 }
